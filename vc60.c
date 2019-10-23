@@ -1,3 +1,8 @@
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ *Currently working: this script may not work
+ *vc7.c is the latest stable script
+ *!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+
 /*************************************
 //Jai Hyun Park
 //October 7, 2019.
@@ -174,15 +179,14 @@ uint64 evaluate_V(uint64* V_in, int d, uint64 *r)
     for(uint64 i = 0; i < n; i ++)
         V[i] = V_in[i];
 
-    for(int round = 0; round < d; round ++)
+    for(int round = 0; round < d; round ++) {
         updateV(V, n >> (round + 1), r[d - round - 1]);
+    }
     ans = V[0];
 
     free(V);
     return ans;
 }
-
-
 
 //sets betavals(p) = \prod_{i=0}^{d-1} (zipi + (1-zi)(1-pi))
 void initialize_betavals(uint64* betavals, int d, uint64* z)
@@ -198,22 +202,23 @@ void initialize_betavals(uint64* betavals, int d, uint64* z)
 			betavals[i] = myModMult(oldval, 1 + PRIME - zval);
 			betavals[i + two_to_k] = myModMult(oldval, zval);
 		}
-		two_to_k <<= two_to_k;
+		two_to_k <<= 1;
 	}
 }
 
 
-inline void update_betavals(uint64* betavals, int num_new, uint64 rval)
+inline uint64 evaluate_beta(uint64 *z, uint64 *r, int d)
 {
-    for(int i = 0; i < num_new; i ++)
-        betavals[i] = myMod(myModMult(betavals[i], 1 + PRIME - rval) + myModMult(betavals[i + num_new], rval));
+    uint64 res = 1;
+    for(int i = 0; i < d; i ++)
+        res = myModMult(res, myMod(myModMult(1 + PRIME - z[i], 1 + PRIME - r[i]) + myModMult(z[i], r[i])));
+    return res;
 }
-
 
 inline uint64 sum_check_verification(uint64 **poly, uint64 ri, int degree, int num_rounds, uint64 *r, const char *str = NULL)
 {
     if(myMod(poly[0][0] + poly[0][1]) != ri){
-        printf("Fail sumcheck %s :: 1st sum check\n", str);
+        printf("Fail sumcheck %s :: 1st sum check %lld %lld\n", str, myMod(poly[0][0] + poly[0][1]), ri);
         return -1;
     }
 
@@ -231,7 +236,7 @@ inline uint64 sum_check_verification(uint64 **poly, uint64 ri, int degree, int n
 }
 
 //evaluate V(0, p), V(1, p), .., V(n, p)
-inline void linear_evaluation(uint64* v, int n, int num_terms, int pivot, uint64* V)
+inline void linear_evaluation(uint64* v, int n, uint64 num_terms, int pivot, uint64* V)
 {
     v[0] = V[pivot];
     v[1] = V[pivot + (num_terms >> 1)];
@@ -273,21 +278,22 @@ uint64 sum_check_rounding(uint64* V, uint64 **C, uint64 ri, int d, int num_digit
     }
 
     //initialize betavals
-    betavals = (uint64*) malloc((1 << d) * sizeof(uint64));
-    initialize_betavals(betavals, d, z);
-    uint64 br = evaluate_V(betavals, d, r);
+    betavals = (uint64*) malloc((1ULL << d) * sizeof(uint64));
+    //uint64 br = evaluate_V(betavals, d, r);
+    uint64 br = evaluate_beta(z, r, d);
 
     printf("%f sec til br\n", (double)(clock() - t)/CLOCKS_PER_SEC);
     t = clock();
 
 
+    initialize_betavals(betavals, d, z);
     //prover do:
     uint64 b[4], c[4];
-    int num_terms =  1 << d;
+    uint64 num_terms =  1ULL << d;
     for(int round = 0; round < d; round ++){
 
         for(int i = 0; i < num_digits; i ++){
-            for(int j = 0; j < num_terms / 2; j ++){
+            for(uint64 j = 0; j < num_terms / 2; j ++){
 
                 linear_evaluation(b, 4, num_terms, j, betavals);
                 linear_evaluation(c, 4, num_terms, j, C[i]);
@@ -301,7 +307,7 @@ uint64 sum_check_rounding(uint64* V, uint64 **C, uint64 ri, int d, int num_digit
         }
             
         num_terms >>= 1;
-		update_betavals(betavals, num_terms, r[d - round - 1]);
+		updateV(betavals, num_terms, r[d - round - 1]);
         
     }
     for(int i = 0; i < num_digits; i ++)
@@ -350,6 +356,37 @@ uint64 sum_check_rounding(uint64* V, uint64 **C, uint64 ri, int d, int num_digit
 }
 
 
+
+inline uint64 inv_pow2(int k)
+{
+    return myMod(1ULL << (61 - k)); 
+}
+
+uint64 evaluate_alpha(int e_in, uint64 *r, int d)
+{
+    uint64 l = 1, u = 0, rval, e = e_in - 1, tmp;
+
+    if((e >= (1ULL << d)) || (e_in == 0))
+        return 0;
+
+    for(int i = d - 1; i >= 0; i --){
+        
+        rval = myModMult(r[i], 1ULL << (1ULL << i));
+        if((e >> i) & 1){
+            tmp = myMod(myModMult(1 + PRIME - r[i], l) + myModMult(rval, l));
+            u = myMod(myModMult(1 + PRIME - r[i], l) + myModMult(rval, u));
+            l = tmp;
+        } else {
+            tmp = myMod(myModMult(1 + PRIME - r[i], l) + myModMult(rval, u));
+            u = myMod(myModMult(1 + PRIME - r[i], u) + myModMult(rval, u));
+            l = tmp;
+        }
+    }
+
+    return l;
+}
+
+
 //N = 2^d elements
 //Rounding d1 digits to d2 digits
 //Updates V_r, V, C, at the same time til z
@@ -372,28 +409,32 @@ uint64 sum_check_rounding_fast(uint64* V, uint64* C, uint64 ri, int d, int d1, i
     printf("%f sec til cr\n", (double)(clock() - t)/CLOCKS_PER_SEC);
     t = clock();
     
-    //construct and pre-compute the alpha (prover's work)
+    //construct and pre-compute the alpha (prover's task)
     uint64 *r_head = (uint64*) malloc(l * sizeof(uint64)),
            *r_tail = (uint64*) malloc(d * sizeof(uint64));
     for(int i = 0; i < l; i ++)
         r_head[i] = r[i];
     for(int i = 0; i < d; i ++)
         r_tail[i] = r[i + l];
+
     uint64 *alpha1 = (uint64*) calloc(1 << l, sizeof(uint64)),
            *alpha2 = (uint64*) calloc(1 << l, sizeof(uint64)),
            *betavals = (uint64*) malloc(sizeof(uint64) << (l + d));
-    for(int i = 0; i < d1; i ++){
-        alpha1[i] = 1ULL << i;
-        if(i >= (d1 - d2))
-            alpha2[i] = 1ULL << (i - d1 + d2);
-    }
-    initialize_betavals(betavals, l + d, z);
-    uint64 a1r = evaluate_V(alpha1, l, r_head);
-    uint64 a2r = evaluate_V(alpha2, l, r_head);
-    uint64 br = evaluate_V(betavals, l + d, r);
+    
+    for(int i = 0; i < d1; i ++)
+        alpha1[i] = myMod(1ULL << i);
+    for(int i = d1 - d2; i < d1; i ++)
+        alpha2[i] = myMod(1ULL << (i - d1 + d2));
+
+    uint64 a1r = evaluate_alpha(d1, r_head, l);
+    uint64 a2r = myModMult(a1r + PRIME - evaluate_alpha(d1 - d2, r_head, l), inv_pow2(d1 - d2));
+    uint64 br = evaluate_beta(z, r, l + d);
 
     printf("%f sec til br\n", (double)(clock() - t)/CLOCKS_PER_SEC);
     t = clock();
+    
+    initialize_betavals(betavals, l + d, z);
+    
     
     //poly initialization
     uint64 **poly_b = (uint64**) malloc((d + l) * sizeof(uint64*)),
@@ -402,8 +443,8 @@ uint64 sum_check_rounding_fast(uint64* V, uint64* C, uint64 ri, int d, int d1, i
     for(int i = 0; i < d + l; i ++)
         poly_b[i] = (uint64*) calloc(4, sizeof(uint64));
     for(int i = 0; i < l; i ++){
-        poly_d[i] = (uint64*) calloc(3, sizeof(uint64));
-        poly_r[i] = (uint64*) calloc(3, sizeof(uint64));
+        poly_d[i] = (uint64*) calloc(4, sizeof(uint64));
+        poly_r[i] = (uint64*) calloc(4, sizeof(uint64));
     }
     
 
@@ -411,9 +452,9 @@ uint64 sum_check_rounding_fast(uint64* V, uint64* C, uint64 ri, int d, int d1, i
     //This scheme should be simultaneously executed with the previous step
     // So that it can use the same z, r (and hence the same betavals and ri)
     uint64 b[4], c[4];
-    int num_terms = 1 << (d + l);
+    uint64 num_terms = 1 << (d + l);
     for(int round = 0; round < d; round ++) {
-        for(int j = 0; j < num_terms / 2; j ++){
+        for(uint64 j = 0; j < num_terms / 2; j ++){
 
             linear_evaluation(b, 4, num_terms, j, betavals);
             linear_evaluation(c, 4, num_terms, j, C);
@@ -432,7 +473,7 @@ uint64 sum_check_rounding_fast(uint64* V, uint64* C, uint64 ri, int d, int d1, i
         }
 
         num_terms >>= 1;
-        update_betavals(betavals, num_terms, r_tail[d - 1 - round]);
+        updateV(betavals, num_terms, r_tail[d - 1 - round]);
         updateV(C, num_terms, r_tail[d - 1 - round]);
 
         //Co-execution with the previous step:
@@ -479,24 +520,25 @@ uint64 sum_check_rounding_fast(uint64* V, uint64* C, uint64 ri, int d, int d1, i
     if(!stat) {
         uint64 a1[3], a2[3];
         for(int round = 0; round < l; round ++) {
-            for(int j = 0; j < num_terms / 2; j ++) {
+            for(uint64 j = 0; j < num_terms / 2; j ++) {
     
                 linear_evaluation(b, 4, num_terms, j, betavals);
                 linear_evaluation(c, 4, num_terms, j, C);
                 linear_evaluation(a1, 3, num_terms, j, alpha1);
                 linear_evaluation(a2, 3, num_terms, j, alpha2);
 
-                for(int k = 0; k < 4; k ++)
-                    poly_b[round][k] = myMod(poly_b[round][k] + myModMult(b[k], myModMult(c[k], c[k] + PRIME - 1)));
-                for(int k = 0; k < 3; k ++) {
+                for(int k = 0; k < 3; k ++){
                     poly_d[round][k] = myMod(poly_d[round][k] + myModMult(a1[k], c[k]));
                     poly_r[round][k] = myMod(poly_r[round][k] + myModMult(a2[k], c[k]));
+                }
+                for(int k = 0; k < 4; k ++){
+                    poly_b[round][k] = myMod(poly_b[round][k] + myModMult(b[k], myModMult(c[k], c[k] + PRIME - 1)));
                 }
             
             }
 
             num_terms >>= 1;
-            update_betavals(betavals, num_terms, r_head[l - 1 - round]);
+            updateV(betavals, num_terms, r_head[l - 1 - round]);
             updateV(C, num_terms, r_head[l - 1 - round]);
             updateV(alpha1, num_terms, r_head[l - 1 - round]);
             updateV(alpha2, num_terms, r_head[l - 1 - round]);
@@ -518,6 +560,7 @@ uint64 sum_check_rounding_fast(uint64* V, uint64* C, uint64 ri, int d, int d1, i
         printf("Fail :: V_r\n");
     }
 
+    stat = 0;
     uint64 res = myMod(poly_d[0][0] + poly_d[0][1]);
     if ((!stat) && (myModMult(a1r, cr) != sum_check_verification(poly_d, res, 3, l, r_head, "V_d"))){
         stat = 1;
@@ -568,9 +611,11 @@ int main(int argc, char** argv)
     uint64* r = (uint64*) calloc(d + l, sizeof(uint64));
     uint64* r_tail = (uint64*) malloc(sizeof(uint64) * d);
     for(int i = 0; i < d + l; i ++)
-  	    r[i] = rand() + 4;
+  	    r[i] = rand() & (PRIME - 3);
+//        r[i] = 3;
     for(int i = 0; i < d; i ++)
-        z[i] = rand() + 4;
+//        z[i] = 1;
+  	    z[i] = rand() & (PRIME - 3);
     for(int i = 0; i < d; i ++)
         r_tail[i] = r[i + l];
     t=clock();
