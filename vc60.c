@@ -481,7 +481,6 @@ uint64 sum_check_rounding_fast(uint64* V, uint64* C, uint64 ri, int d, int d1, i
         // e.g.,
         //  updateV(Vr, num_terms >> l, r[d + l - 1 - round]);
     }
-
     printf("%f sec til pro1\n", (double)(clock() - t)/CLOCKS_PER_SEC);
     t = clock();
  
@@ -554,11 +553,12 @@ uint64 sum_check_rounding_fast(uint64* V, uint64* C, uint64 ri, int d, int d1, i
         stat = 1;
         printf("Fail :: V_b\n");
     }
-    
+   
     if ((!stat) && (myModMult(a2r, cr) != sum_check_verification(poly_r, ri, 3, l, r_head, "V_r"))){
         stat = 1;
         printf("Fail :: V_r\n");
     }
+    
 
     stat = 0;
     uint64 res = myMod(poly_d[0][0] + poly_d[0][1]);
@@ -607,15 +607,17 @@ int main(int argc, char** argv)
   
     clock_t t = clock();
   
-    uint64* z = (uint64*) calloc(d, sizeof(uint64));
+    uint64* z = (uint64*) calloc(d + l, sizeof(uint64));
     uint64* r = (uint64*) calloc(d + l, sizeof(uint64));
     uint64* r_tail = (uint64*) malloc(sizeof(uint64) * d);
     for(int i = 0; i < d + l; i ++)
-  	    r[i] = rand() & (PRIME - 3);
+        r[i] = 10;
+//  	    r[i] = rand() & (PRIME - 3);
 //        r[i] = 3;
-    for(int i = 0; i < d; i ++)
+    for(int i = 0; i < d + l; i ++)
+        z[i] = 10;
 //        z[i] = 1;
-  	    z[i] = rand() & (PRIME - 3);
+//  	    z[i] = rand() & (PRIME - 3);
     for(int i = 0; i < d; i ++)
         r_tail[i] = r[i + l];
     t=clock();
