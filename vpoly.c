@@ -102,6 +102,7 @@ void euclidean_algo(const mpz_t u, mpz_t u1, mpz_t u2, mpz_t u3)
 
     mpz_clears(v1, v2, v3, q, t1, t2, t3, tmp, NULL);
 }
+
 void mod_inv(mpz_t rop, const mpz_t a)
 {
     mpz_t u1, u2, u3;
@@ -116,6 +117,34 @@ void mod_inv(mpz_t rop, const mpz_t a)
 
     mpz_clears(u1, u2, u3, NULL);
 }
+
+
+void eval_poly(mpz_t rop, const mpz_t *coeff, const int degree, const mpz_t val)
+{
+    mpz_t base, tmp;
+    mpz_inits(base, tmp, NULL);
+
+    mpz_set(base, val);
+    mpz_set(rop, coeff[0]);
+
+    for(int i = 1; i <= degree; i ++) {
+        mod_mult(tmp, base, coeff[i]);
+        mod_add(rop, rop, tmp);
+        if(i < degree)
+            mod_mult(base, base, val);
+    }
+
+    mpz_clears(base, tmp , NULL);
+    return;
+}
+
+void eval_polys(mpz_t *evs, const mpz_t **coeff, const int n, const int degree, const mpz_t val)
+{
+    for(int i = 0; i < n; i ++)
+        eval_poly(evs[i], coeff[i], degree, val);
+    return;
+}
+
 
 
 void extrapolate(mpz_t rop, const mpz_t *vec, const int n, const mpz_t r)
@@ -175,7 +204,7 @@ void evaluate_V(mpz_t rop, const mpz_t *V_in, const int d, const mpz_t *r)
     free(V);
 }
 
-void initialize_betavals(mpz_t* betavals, const int d, const mpz_t* z)
+void initialize_beta(mpz_t* betavals, const int d, const mpz_t* z)
 {
     mpz_t zval, oldval, tmp;
     uint64 two_to_k = 1;
@@ -323,6 +352,268 @@ void evaluate_alpha(mpz_t rop, const uint64 e_in, const mpz_t* r, const int d)
     mpz_clears(l, u, rval, tmp1, tmp2, NULL);
 }
 
+
+
+void evaluate_tau(mpz_t rop, const mpz_t val, const mpz_t *r, const int d)
+{
+    mpz_t base, tmp, one;
+    mpz_set_ui(rop, 1);
+    mpz_init_set(base, val);
+    mpz_init(tmp);
+    mpz_init_set_ui(one, 1);
+    for(int i = 0; i < d; i ++){
+        mod_sub(tmp, base, one);
+        mod_mult(tmp, tmp, r[d - 1 - i]);
+        mod_add(tmp, tmp, one);
+        mod_mult(rop, rop, tmp);
+        if(i < (d - 1))
+            mod_mult(base, base, base);
+    }
+    mpz_clears(base, tmp, one, NULL);
+}
+void initialize_alpha(mpz_t *alpha, const int l, const int e)
+{
+    mpz_t base, two;
+    mpz_init_set_ui(base, 1);
+    mpz_init_set_ui(two, 2);
+    for(int i = 0; i < (1 << l); i ++){
+        if(i < e) {
+            mpz_set(alpha[i], base);
+            mod_mult(base, base, two);
+        } else {
+            mpz_set_ui(alpha[i], 0);
+        }
+    }
+    mpz_clears(base, two, NULL);
+}
+void initialize_tau(mpz_t *tau, const int l, const mpz_t val)
+{
+    mpz_t base;
+    mpz_init_set_ui(base, 1);
+    for(int i = 0; i < (1 << l); i ++){
+        mpz_set(tau[i], base);
+        mod_mult(base, base, val);
+    }
+    mpz_clear(base);
+}
+// log # poly = ln
+// log degree = ld
+// d1 bits -> d2 bits
+int sum_check_poly_rounding(mpz_t rop, mpz_t *C, const mpz_t ri, const int ln, const int ld, const int d1, const int d2, const mpz_t *r_n, const mpz_t *r_d, const mpz_t *r_b, const mpz_t val, const mpz_t *z_n, const mpz_t *z_db)
+{
+    int stat = 1;
+    int lb = 0;
+    while((d1 - 1) >> ++ lb);
+    int l = ln + ld + lb;
+    mpz_t tmp1, tmp2, cr, a1r, a2r, b1r, b2r, tr;
+    mpz_inits(tmp1, tmp2, cr, a1r, a2r, b1r, b2r, tr, NULL);
+    mpz_t *r = (mpz_t*) malloc(sizeof(mpz_t) * (ln + ld + lb)),
+          *z = (mpz_t*) malloc(sizeof(mpz_t) * (ln + ld + lb));
+    for(int i = 0; i < ln; i ++)
+        mpz_init_set(r[i], r_n[i]);
+    for(int i = 0; i < ld; i ++)
+        mpz_init_set(r[i + ln], r_d[i]);
+    for(int i = 0; i < lb; i ++)
+        mpz_init_set(r[i + ln + ld], r_b[i]);
+    for(int i = 0; i < ln; i ++)
+        mpz_init_set(z[i], z_n[i]);
+    for(int i = 0; i < ld + lb; i ++)
+        mpz_init_set(z[i + ln], z_db[i]);
+    
+    //commit
+    evaluate_V(cr, C, l, r);
+    evaluate_alpha(a1r, d1, r_b, lb);
+    evaluate_alpha(a2r, d1 - d2, r_b, lb);
+    evaluate_beta(b1r, z, r_n, ln);
+    evaluate_beta(b2r, z, r, l);
+    evaluate_tau(tr, val, r_d, ld); 
+
+    //sum check
+    
+    //init
+    mpz_t b1[3], b2[4], c[4], a1[3], a2[3], t[3];
+    for(int i = 0; i < 3; i ++)
+        mpz_inits(b1[i], b2[i], c[i], a1[i], a2[i], t[i], NULL);
+    mpz_inits(b2[3], c[3], NULL);
+    
+    mpz_t *beta1 = (mpz_t*) malloc(sizeof(mpz_t) << ln),
+          *beta2 = (mpz_t*) malloc(sizeof(mpz_t) << l),
+          *tau = (mpz_t*) malloc(sizeof(mpz_t) << ld),
+          *alpha1 = (mpz_t*) malloc(sizeof(mpz_t) << lb),
+          *alpha2 = (mpz_t*) malloc(sizeof(mpz_t) << lb);
+    for(uint64 i = 0; i < (1ULL << ln); i ++)
+        mpz_init(beta1[i]);
+    for(uint64 i = 0; i < (1ULL << l); i ++)
+        mpz_init(beta2[i]);
+    for(uint64 i = 0; i < (1ULL << ld); i ++)
+        mpz_init(tau[i]);
+    for(uint64 i = 0; i < (1ULL << lb); i ++)
+        mpz_inits(alpha1[i], alpha2[i], NULL);
+
+    initialize_beta(beta1, ln, z_n);
+    initialize_beta(beta2, l, z);
+    initialize_alpha(alpha1, lb, d1);
+    initialize_alpha(alpha2, lb, d1 - d2);
+    initialize_tau(tau, ld, val);
+
+    mpz_t **poly_b = (mpz_t**) malloc(sizeof(mpz_t*) * l),
+          **poly_d = (mpz_t**) malloc(sizeof(mpz_t*) * l),
+          **poly_r = (mpz_t**) malloc(sizeof(mpz_t*) * l);
+    for(int i = 0; i < l; i ++){
+        poly_b[i] = (mpz_t*) malloc(sizeof(mpz_t) * 4);
+        poly_d[i] = (mpz_t*) malloc(sizeof(mpz_t) * 3);
+        poly_r[i] = (mpz_t*) malloc(sizeof(mpz_t) * 3);
+        for(int j = 0; j < 4; i ++){
+            mpz_init_set_ui(poly_b[i][j], 0);
+        }
+        for(int j = 0; j < 3; i ++){
+            mpz_init_set_ui(poly_d[i][j], 0);
+            mpz_init_set_ui(poly_r[i][j], 0);
+        }
+    }
+
+    //proof
+    uint64 num_terms = 1ULL << l;
+    for(int round = 0; round < l; round ++) {
+        for(uint64 j = 0; j < num_terms / 2; j ++) {
+
+            linear_evaluation(b1, 3, num_terms >> (ld + lb), j >> (ld + lb), beta1);
+            linear_evaluation(t, 3, (num_terms >> lb) & ((1ULL << ld) - 1), (j >> lb) & ((1ULL << ld) - 1), tau);
+            linear_evaluation(a1, 3, num_terms & ((1ULL << lb) - 1), j & ((1ULL << lb) - 1), alpha1);
+            linear_evaluation(a2, 3, num_terms & ((1ULL << lb) - 1), j & ((1ULL << lb) - 1), alpha2);
+            
+            linear_evaluation(b2, 4, num_terms, j, beta2);
+            linear_evaluation(c, 4, num_terms, j, C);
+
+            for(int k = 0; k < 3; k ++) {
+                mod_mult(tmp1, b1[k], c[k]);
+                mod_mult(tmp1, t[k], tmp1);
+                mod_mult(tmp2, tmp1, a2[k]);//tmp2<-bk*tk*ck*a2k
+                mod_mult(tmp1, tmp1, a1[k]);//tmp1<-bk*tk*ck*a1k
+
+                mod_add(poly_d[round][k], poly_d[round][k], tmp1);
+                mod_add(poly_r[round][k], poly_r[round][k], tmp2);
+            }
+
+            for(int k = 0; k < 4; k ++) {
+                mpz_sub_ui(tmp1, c[k], 1);
+                mod_mult(tmp1, tmp1, c[k]);
+                mod_mult(tmp1, tmp1, b2[k]); //tmp1<-bk*ck*(ck-1)
+                mod_add(poly_b[round][k], poly_b[round][k], tmp1);
+            }
+        }
+        num_terms >>= 1;
+
+        if(round < ln) {
+            update_V(beta1, num_terms >> (lb + ld), r[l - 1 - round]);
+        } else if (round < ln + ld) {
+            update_V(tau, num_terms >> ld, r[l - 1 - round]);
+        } else {
+            update_V(alpha1, num_terms, r[l - 1 - round]);
+            update_V(alpha2, num_terms, r[l - 1 - round]);
+        }
+        update_V(C, num_terms, r[l - 1 - round]);
+        update_V(beta2, num_terms, r[l - 1 - round]);
+        
+    }
+
+
+    //verify
+    mpz_set_ui(tmp1, 0);
+    stat = stat ? sum_check_verification(tmp2, poly_b, tmp1, 4, l, r, "V_b") : 0;
+    mpz_sub_ui(tmp1, cr, 1);
+    mod_mult(tmp1, tmp1, cr);
+    mod_mult(tmp1, tmp1, b2r);
+    if(stat && mpz_cmp(tmp1, tmp2)) {
+        stat = 0;
+        printf("Fail :: V_b output does not match %s %s\n", mpz_get_str(NULL, 10, tmp1), mpz_get_str(NULL, 10, tmp2));
+    }
+
+    mod_add(tmp1, poly_d[0][0], poly_d[0][1]); 
+    stat = stat ? sum_check_verification(tmp2, poly_d, tmp1, 3, l, r, "V_d") : 0;
+    mod_mult(tmp1, a1r, cr);
+    mod_mult(tmp1, tmp1, b1r);
+    mod_mult(tmp1, tmp1, tr);
+    if(stat && mpz_cmp(tmp1, tmp2)) {
+        stat = 0;
+        printf("Fail :: V_d output does not match\n");
+    }
+
+    mpz_set_ui(tmp2, 2);
+    mod_pow(tmp2, tmp2, d1 - d2);
+    mod_mult(tmp2, tmp2, ri);
+    mod_sub(tmp1, tmp1, tmp2);
+    stat = stat ? sum_check_verification(tmp2, poly_r, tmp1, 3, l, r, "V_r") : 0;
+    mod_mult(tmp1, a2r, cr);
+    mod_mult(tmp1, tmp1, b1r);
+    mod_mult(tmp1, tmp1, tr);
+    if(stat && mpz_cmp(tmp1, tmp2)) {
+        stat = 0;
+        printf("Fail :: V_r output does not match %s %s\n", mpz_get_str(NULL, 10, tmp1), mpz_get_str(NULL, 10, tmp2));
+    }
+
+
+    //return
+    if(stat)
+        mod_add(rop, poly_d[0][0], poly_d[0][1]);
+    else
+        mpz_set_ui(rop, 0);
+
+    
+    //free
+    mpz_clears(tmp1, tmp2, cr, a1r, a2r, b1r, b2r, tr, NULL);
+    for(int i = 0; i < l; i ++)
+        mpz_clear(r[i]);
+    for(int i = 0; i < l; i ++)
+        mpz_clear(z[i]);
+    free(r);
+    free(z);
+    for(int i = 0; i < 3; i ++)
+        mpz_clears(b1[i], b2[i], c[i], a1[i], a2[i], t[i], NULL);
+    mpz_clears(b2[3], c[3], NULL);
+    
+    for(uint64 i = 0; i < (1ULL << ln); i ++)
+        mpz_init(beta1[i]);
+    for(uint64 i = 0; i < (1ULL << l); i ++)
+        mpz_init(beta2[i]);
+    for(uint64 i = 0; i < (1ULL << ld); i ++)
+        mpz_init(tau[i]);
+    for(uint64 i = 0; i < (1ULL << lb); i ++)
+        mpz_inits(alpha1[i], alpha2[i], NULL);
+    free(beta1);
+    free(beta2);
+    free(alpha1);
+    free(alpha2);
+    free(tau);
+
+    for(int i = 0; i < l; i ++){
+        poly_b[i] = (mpz_t*) malloc(sizeof(mpz_t) * 4);
+        poly_d[i] = (mpz_t*) malloc(sizeof(mpz_t) * 3);
+        poly_r[i] = (mpz_t*) malloc(sizeof(mpz_t) * 3);
+        for(int j = 0; j < 4; i ++){
+            mpz_init_set_ui(poly_b[i][j], 0);
+        }
+        for(int j = 0; j < 3; i ++){
+            mpz_init_set_ui(poly_d[i][j], 0);
+            mpz_init_set_ui(poly_r[i][j], 0);
+        }
+    }
+
+    for(int i = 0; i < l; i ++) {
+        for(int j = 0; j < 3; j ++)
+            mpz_clears(poly_b[i][j], poly_d[i][j], poly_r[i][j], NULL);
+        mpz_clear(poly_b[i][3]);
+        free(poly_b[i]);
+        free(poly_d[i]);
+        free(poly_r[i]);
+    }
+    free(poly_b);
+    free(poly_d);
+    free(poly_r);
+ 
+}
+
+
 int sum_check_rounding_fast(mpz_t rop, mpz_t *C, const mpz_t ri, const int d, const int d1, const int d2, const mpz_t *r, const mpz_t* z)
 {
     clock_t t = clock(), tall = clock();
@@ -382,7 +673,7 @@ int sum_check_rounding_fast(mpz_t rop, mpz_t *C, const mpz_t ri, const int d, co
     
     for(int i = 0; i < (1 << l + d); i ++)
         mpz_init(betavals[i]);
-    initialize_betavals(betavals, l + d, z); 
+    initialize_beta(betavals, l + d, z); 
     
     mpz_t **poly_b = (mpz_t**) malloc(sizeof(mpz_t*) * (d + l)),
           **poly_d = (mpz_t**) malloc(sizeof(mpz_t*) * l),

@@ -74,6 +74,18 @@ inline uint64 myModMult(uint64 x, uint64 y)
     return result;
 }
 
+/*
+inline uint64 myModMult(uint64 x, uint64 y)
+{
+    uint64 result = 0;
+    for(int i = 0; i < 64; i ++) {
+        if((x >> i) & 1) {
+            result = myMod(result + ((y << i) & PRIME) + (y >> (61 - i)));
+        }
+    }
+    return result;
+}
+*/
 
 //computes b^e mod p using repeated squaring. p should be 2^61-1
 inline uint64 myModPow(uint64 b, uint64 e)
@@ -611,13 +623,11 @@ int main(int argc, char** argv)
     uint64* r = (uint64*) calloc(d + l, sizeof(uint64));
     uint64* r_tail = (uint64*) malloc(sizeof(uint64) * d);
     for(int i = 0; i < d + l; i ++)
-        r[i] = 10;
 //  	    r[i] = rand() & (PRIME - 3);
-//        r[i] = 3;
+        r[i] = 100 + i;
     for(int i = 0; i < d + l; i ++)
-        z[i] = 10;
-//        z[i] = 1;
 //  	    z[i] = rand() & (PRIME - 3);
+        z[i] = 120 + i;
     for(int i = 0; i < d; i ++)
         r_tail[i] = r[i + l];
     t=clock();
