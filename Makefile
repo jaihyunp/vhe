@@ -10,15 +10,17 @@ DIR_BINS=bin
 
 VC_OBJS = \
 $(DIR_OBJS)/field.o \
-$(DIR_OBJS)/poly.o \
+$(DIR_OBJS)/polynomial.o \
 $(DIR_OBJS)/parameters.o \
+$(DIR_OBJS)/specialmaps.o \
 $(DIR_OBJS)/main.o \
 
 
 VC_DEPS = \
 $(DIR_OBJS)/field.d \
-$(DIR_OBJS)/poly.d \
+$(DIR_OBJS)/polynomial.d \
 $(DIR_OBJS)/parameters.d \
+$(DIR_OBJS)/specialmaps.d \
 $(DIR_OBJS)/main.d \
 
 VC_TARGET = $(DIR_BINS)/vc.exe
@@ -38,7 +40,6 @@ $(DIR_OBJS)/%.o: $(DIR_SRCS)/%.cpp
 	$(CC) $(INC) $(CFLAGS) -c -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
-
 
 
 # All Target

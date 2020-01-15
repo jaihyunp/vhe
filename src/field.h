@@ -16,7 +16,7 @@ void mod_add_ui(mpz_t rop, const mpz_t x, const uint64 y);
 
 void mod_sub(mpz_t rop, const mpz_t x, const mpz_t y);
 void mod_sub_ui(mpz_t rop, const mpz_t x, const uint64 y);
-void mod_ui_add(mpz_t rop, const uint64 x, const mpz_t y);
+void mod_ui_sub(mpz_t rop, const uint64 x, const mpz_t y);
 
 void mod_mult(mpz_t rop, const mpz_t x, const mpz_t y);
 void mod_mult_ui(mpz_t rop, const mpz_t x, const uint64 y);

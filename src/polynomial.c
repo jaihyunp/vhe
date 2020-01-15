@@ -1,16 +1,8 @@
 #include "parameters.h"
 #include "field.h"
-#include "poly.h"
+#include "polynomial.h"
 #include <stdlib.h>
 #include <gmp.h>
-
-/*
-mpz_t PRIME;
-uint64 logN, N;
-mpz_t *ROU; //(4N)-th root of unity
-//ROU[i] = w^i, i=1,2,..,4N
-gmp_randstate_t STATE;
-*/
 
 void _fft(mpz_t *buf, mpz_t *out, const uint64 n, const uint64 step)
 {
@@ -131,7 +123,7 @@ void fourier_add(mpz_t *v, const mpz_t *v1, const mpz_t *v2, const uint64 n)
         mod_add(v[i], v1[i], v2[i]);
 }
 
-int poly_cmp(const mpz_t *c, const uint64 deg, const mpz_t *v, const uint64 n)
+int polynomial_cmp(const mpz_t *c, const uint64 deg, const mpz_t *v, const uint64 n)
 {
     int stat = 1;
     mpz_t *tmp = (mpz_t*) malloc(sizeof(mpz_t) * n);
@@ -171,18 +163,70 @@ void coeff_evaluate(mpz_t val, const mpz_t x, const mpz_t *c, const uint64 deg)
     mpz_clears(po, rop, tmp, NULL);
 }
 
-/*
-void fourier_extrapolate(mpz_t val, const mpz_t x, const mpz_t *v, const uint64 n)
+void polynomial_extrapolate(mpz_t val, const mpz_t x, const mpz_t *xs, const mpz_t *ys, const uint64 n)
 {
     mpz_t mult, tmp, inv;
     mpz_inits(mult, tmp, inv, NULL);
 
     mpz_set_ui(val, 0);
     for(uint64 i = 0; i < n; i ++) {
-        
+        mpz_set_ui(mult, 1);
+        for(uint64 j = 0; j < n; j ++) {
+            if(i != j) {
+                mod_sub(tmp, xs[i], xs[j]);
+                mod_inv(inv, tmp);
+                mod_sub(tmp, x, xs[j]);
+                mod_mult(mult, mult, tmp);
+                mod_mult(mult, mult, inv);
+            }
+        }
+        mod_mult(tmp, mult, ys[i]);
+        mod_add(val, val, tmp);
     }
 
     mpz_clears(mult, tmp, inv, NULL);
 }
-*/
 
+void polynomial_extrapolate_N(mpz_t val, const mpz_t x, const mpz_t *ys, const uint64 n)
+{
+    mpz_t mult, tmp, inv;
+    mpz_inits(mult, tmp, inv, NULL);
+
+    mpz_set_ui(val, 0);
+    for(uint64 i = 0; i < n; i ++) {
+        mpz_set_ui(mult, 1);
+        for(uint64 j = 0; j < n; j ++) {
+            if(i > j) {
+                mod_set_ui(tmp, i - j);
+                mod_inv(inv, tmp);
+                mod_sub_ui(tmp, x, j);
+                mod_mult(mult, mult, tmp);
+                mod_mult(mult, mult, inv);
+            }
+            if(j > i) {
+                mod_set_ui(tmp, j - i);
+                mod_inv(inv, tmp);
+                mod_ui_sub(tmp, j, x);
+                mod_mult(mult, mult, tmp);
+                mod_mult(mult, mult, inv);
+            }
+        }
+        mod_mult(tmp, mult, ys[i]);
+        mod_add(val, val, tmp);
+    }
+
+    mpz_clears(mult, tmp, inv, NULL);
+}
+
+void fourier_extrapolate(mpz_t val, const mpz_t x, const mpz_t *v, const uint64 n)
+{
+    mpz_t *xs = (mpz_t*) malloc(sizeof(mpz_t) * n);
+    for(uint64 i = 0; i < n; i ++)
+        mpz_init_set(xs[i], ROU[i * 4 * N / n]);
+        
+    polynomial_extrapolate(val, x, xs, v, n);
+
+    for(uint64 i = 0; i < n; i ++)
+        mpz_clear(xs[i]);
+    free(xs);
+}
