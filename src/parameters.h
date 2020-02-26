@@ -3,12 +3,21 @@
 
 #include <gmp.h>
 #include "typedefs.h"
+#include "field.h"
 
 extern mpz_t PRIME;
+extern mpz_t GSIZE;
+extern mpz_t GGEN;
+
+extern long WORDS;					// Each element is represented by WORD number of uint64
+extern long BITS;					// = WORDS * 64  =  Bit-size of GSIZE
+extern long digit_rep;				// Only for printf
+extern gmp_randstate_t STATE;		// State for random
+
 extern uint64 logN;
 extern uint64 N;
+
 extern mpz_t *ROU;
-extern gmp_randstate_t STATE;		// State for random
 
 /* Init */
 int init_field(mp_bitcnt_t n, int logN_in);

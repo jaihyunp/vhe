@@ -1,184 +1,353 @@
-#include "typedefs.h"
-#include "field.h"
 #include "parameters.h"
+#include "field.h"
 #include "polynomial.h"
+#include "mlmap.h"
+#include "vheaan.h"
 #include <stdio.h>
 #include <stdlib.h>
 
+int main_rescale(int argc, char **argv);
+int main_mult(int argc, char **argv);
+
 int main(int argc, char **argv)
 {
-    if(argc != 4) {
-        printf("./a.out [Prime bit] [logN_in] [mode]\n");
-        printf("mode 0: ROU ~\n");
-        printf("mode 1: FFT ~ \n");
-        printf("mode 2: ADD ~ \n");
-        printf("mode 3: MULT ~\n");
-        printf("mode 4: EXTRAP ~\n");
-        return 0;
-    }
-    
-    /* Init */
-    int logN_in = atoi(argv[2]);
-    long prime_bit = atol(argv[1]);
-    int mode = atoi(argv[3]);
-    init_field(prime_bit, logN_in);
-
-    mpz_t *v1, *v2, *v, *c1, *c2, *c;
-    v = (mpz_t*) malloc(sizeof(mpz_t) * N * 2);
-    v1 = (mpz_t*) malloc(sizeof(mpz_t) * N * 2);
-    v2 = (mpz_t*) malloc(sizeof(mpz_t) * N * 2);
-    c = (mpz_t*) malloc(sizeof(mpz_t) * N * 2);
-    c1 = (mpz_t*) malloc(sizeof(mpz_t) * N * 2);
-    c2 = (mpz_t*) malloc(sizeof(mpz_t) * N * 2);
-    for(uint64 i = 0; i < 2 * N; i ++)
-        mpz_inits(v1[i], v2[i], v[i], c1[i], c2[i], c[i], NULL);
-
-    mpz_t tmp, val1, val2;
-    mpz_inits(tmp, val1, val2, NULL);
-
-
-    if(mode <= 0) {
-    
-        /* Test for ROU */
-        printf("====================================================\n");
-        printf("Test for ROU: 4N th root of unity\n");
-        printf("----------------------------------------------------\n");
-        mod_pow_ui(tmp, ROU[1], 2 * N);
-        if(!mpz_cmp_ui(tmp, 1))
-            printf("Fail to ROU1\n");
-        mod_mult(tmp, tmp, tmp);
-        if(mpz_cmp_ui(tmp, 1))
-            printf("Fail to ROU2\n");
-        printf("ROU Test done\n");   
-        printf("====================================================\n\n\n");
-    }
-
-    if(mode <= 1) {
-
-        /* Test for FFT & iFFT */
-        printf("====================================================\n");
-        printf("Test for FFT & iFFT\n");
-        printf("----------------------------------------------------\n");
-        for(uint64 i = 0; i < N; i ++) {
-            mod_random(c[i]);
-        }
-        fft(v, N, c, N);
-        printf(" fft done\n");
-        for(uint64 i = 0; i < N; i ++) {
-            coeff_evaluate(tmp, ROU[i * 4], c, N);
-            if(mpz_cmp(tmp, v[i]))
-                printf("Fail to FFT\n");
-        }
-        printf("FFT Test done\n");
-        
-        ifft(c1, v, N);
-        printf(" ifft done\n");
-        for(uint64 i = 0; i < N; i ++) {
-            if(mpz_cmp(c1[i], c[i]))
-                printf("Fail to iFFT\n");
-        }
-        printf("iFFT Test done\n");
-        printf("====================================================\n\n\n");
-    }
-
-    if(mode <= 2) {
-
-        /* Test for Add */
-        printf("====================================================\n");
-        printf("Test for Add\n");
-        printf("----------------------------------------------------\n");
-        for(uint64 i = 0; i < N; i ++) {
-            mod_random(c1[i]);
-            mod_random(c2[i]);
-        }
-
-        fft(v1, N, c1, N);
-        fft(v2, N, c2, N);
-        printf(" fft done\n");
-        fourier_add(v, v1, v2, N);    
-        printf("f-add done\n");
-        coeff_add(c, c1, c2, N);
-        printf("c-add done\n");
-
-        if(polynomial_cmp(c, N, v, N))
-            printf("Fail to add\n");
-        printf("Poly Add Test done\n");
-        printf("====================================================\n\n\n");
-    }
-
-    if(mode <= 3) {
-
-        /* Test for Mult */
-        printf("====================================================\n");
-        printf("Test for Mult\n");
-        printf("----------------------------------------------------\n");
-        for(uint64 i = 0; i < N; i ++) {
-            mod_random(c1[i]);
-            mod_random(c2[i]);
-        }
-
-        fft(v1, 2 * N, c1, N);
-        fft(v2, 2 * N, c2, N);
-        printf(" fft done\n");
-        fourier_mult(v, v1, v2, 2 * N);
-        printf("f-mult done\n");
-        coeff_mult(c, c1, c2, N);
-        printf("c-mult done\n");
-        
-        if(polynomial_cmp(c, 2 * N, v, 2 * N))
-            printf("Fail to mult\n");
-        printf("Poly Mult Test done\n");
-        printf("====================================================\n\n\n");
-    }
-
-    if(mode <= 4) {
-
-        /* Test for Eval & Extrap */
-        printf("====================================================\n");
-        printf("Test for Extrap\n");
-        printf("----------------------------------------------------\n");
-        for(uint64 i = 0; i < 2 * N; i ++) {
-            mod_random(c1[i]);
-            mod_random(c2[i]);
-        }
-
-        fft(v1, N, c1, N);
-        fft(v2, 2 * N, c2, 2 * N);
-        printf(" fft done\n");
-
-        mod_random(tmp);
-        
-        coeff_evaluate(val1, tmp, c1, N);
-        printf(" c1 done\n");
-        fourier_extrapolate(val2, tmp, v1, N);
-        printf(" f1 done\n");
-        if(mpz_cmp(val1, val2))
-            printf("Fail to extrap N deg\n");
-        printf("N degree done\n");
-
-        coeff_evaluate(val1, tmp, c2, 2 * N);
-        printf(" c2 done\n");
-        fourier_extrapolate(val2, tmp, v2, 2 * N);
-        printf(" f2 done\n");
-        if(mpz_cmp(val1, val2))
-            printf("Fail to extrap 2N deg\n");
-        printf("2N degree done\n");
-
-        printf("Fourier Extrap Test done\n");
-        printf("====================================================\n\n\n");
-    }
-
-    /* Free */
-    mpz_clears(tmp, val1, val2, NULL);
-    for(uint64 i = 0; i < N * 2; i ++){
-        mpz_clears(v1[i], v2[i], v[i], c1[i], c2[i], c[i], NULL);
-    }
-    free(v1);
-    free(v2);
-    free(v);
-    free(c1);
-    free(c2);
-    free(c);
-    free_field();
+    return main_rescale(argc, argv);
 }
 
+
+//for mult;
+int main_mult(int argc, char **argv)
+{
+    if (argc != 5) {
+        printf("Usage: ./a.out [bit of prime (8k-1)] [logN] [log_num] [bits].\n");
+        return 0;
+    }
+    long bits_of_prime = atol(argv[1]);
+    int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), bits = atoi(argv[4]), log_bits = 0, num = 1 << log_num, stat = 1;
+    init_field(bits_of_prime, logN_in); //init field
+    while ((bits - 1) >> ++ log_bits);
+    int ubits = 1 << log_bits;
+    mpz_t base1, base2, val, MAX, mask;
+    mpz_inits(base1, base2, val, MAX, mask, NULL);
+    mpz_t *poly = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N),
+          *tmp1 = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N),
+          *tmp2 = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N);
+    for (int i = 0; i < (int) (2 * N); i ++)
+        mpz_inits(poly[i], tmp1[i], tmp2[i], 0);
+
+    //set val
+    mpz_urandomm(val, STATE, PRIME);
+
+    //circ evaluation & construction
+    mpz_t **v_2 = (mpz_t **) malloc(sizeof(mpz_t *) * (num * 4)),
+          **v_1l = (mpz_t **) malloc(sizeof(mpz_t *) * (num * 2)),
+          **v_1r = (mpz_t **) malloc(sizeof(mpz_t *) * num),
+          **v_1d = (mpz_t **) malloc(sizeof(mpz_t *) * num),
+          **v_0d = (mpz_t **) malloc(sizeof(mpz_t *) * (num * 2)),
+          **v_0r = (mpz_t **) malloc(sizeof(mpz_t *) * (num * 2)),
+          *V_1c = (mpz_t *) malloc(sizeof(mpz_t) * (num * 2 * N * ubits * 4)),
+          *V_0c = (mpz_t *) malloc(sizeof(mpz_t) * (num * 2 * 2 * N * ubits * 4));
+    for (int i = 0; i < num; i ++) {
+        v_1r[i] = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N); //In order to mult, this have to store 2N points
+        for (int k = 0; k < (int) (2 * N); k ++) 
+            mpz_init(v_1r[i][k]);
+        v_1d[i] = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N);
+        for (int k = 0; k < (int) (2 * N); k ++)
+            mpz_init(v_1d[i][k]);
+        for (int j = 0; j < 4; j ++) {
+            v_2[i * 4 + j] = (mpz_t *) malloc(sizeof(mpz_t) * N);
+            for (int k = 0; k < (int) (2 * N); k ++)
+                mpz_init(v_2[i * 4 + j][k]);
+        }
+        for (int j = 0; j < 2; j ++) {
+            v_1l[i * 2 + j] = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N);
+            for (int k = 0; k < (int) (2 * N); k ++) 
+                mpz_init(v_1l[i * 2 + j][k]);
+            v_0d[i * 2 + j] = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N);
+            for (int k = 0; k < (int) (2 * N); k ++) 
+                mpz_init(v_0d[i * 2 + j][k]);
+            v_0r[i * 2 + j] = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N);
+            for (int k = 0; k < (int) (2 * N); k ++) 
+                mpz_init(v_0r[i * 2 + j][k]);
+        }
+    }
+
+
+    //mle construction
+    mpz_t P, *evk1 = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N), *evk2 = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N);
+    for (int i = 0; i < (int) N; i ++)
+        mpz_inits(evk1[i], evk2[i], 0);
+    mpz_init(P);
+
+    mpz_set_ui(P, 2);
+    mod_pow_ui(P, P, bits);
+    mod_sub_ui(mask, P, 1);
+
+    mod_pow(MAX, P, P);
+    for (int i = 0; i < (int) N; i ++) {
+        mpz_urandomm(tmp1[i], STATE, MAX);
+        mpz_urandomm(tmp2[i], STATE, MAX); //Compute 2N points of N deg poly
+    }
+    fft(evk1, 2 * N, tmp1, N);
+    fft(evk2, 2 * N, tmp2, N); //evk <- N deg poly w/ coeff of 2B bits
+
+    for (int i = 0; i < num; i ++) {
+        for (int j = 0; j < 4; j ++) {
+            for (int k = 0; k < (int) N; k ++)
+                mpz_urandomm(tmp1[k], STATE, P);
+            fft(v_2[4 * i + j], 2 * N, tmp1, N); //Compute 2N points of N deg poly
+        } //v_2 <- N deg poly w/ coeff of B bits = (a1,b1,a2,b2)
+
+        fourier_mult(v_1l[2 * i], v_2[4 * i], v_2[4 * i + 2], 2 * N);
+        fourier_mult(tmp1, v_2[4 * i + 1], v_2[4 * i + 2], 2 * N);
+        fourier_mult(tmp2, v_2[4 * i], v_2[4 * i + 3], 2 * N);
+        fourier_add(v_1l[2 * i + 1], tmp1, tmp2, 2 * N); //v_1l = (a1*a2,a1*b2+a2*b1)
+
+        fourier_mult(v_1d[i], v_2[4 * i + 1], v_2[4 * i + 3], 2 * N); //v_1d = b1*b2
+        ifft(tmp1, v_1d[i], 2 * N);
+        for (int j = 0; j < (int) (2 * N); j ++) {
+            for (int k = 0; k < ubits * 4; k ++) {
+                if (mpz_tstbit(tmp1[j], k)) {
+                    mpz_set_ui(V_1c[(i * 2 * N + j) * ubits * 4 + k], 1);
+                } else {
+                    mpz_set_ui(V_1c[(i * 2 * N + j) * ubits * 4 + k], 0);
+                }
+            }
+        } //set V_1c
+        for (int j = 0; j < (int) N; j ++) {           
+            mod_sub(tmp2[j], tmp1[j], tmp1[j + N]);
+            mpz_and(tmp2[j], tmp2[j], mask);
+        }
+        fft(v_1r[i], 2 * N, tmp2, N); //set v_1r to be reduced v_1d
+
+        for (int j = 0; j < (int) N; j ++)
+            mod_mult(tmp1[j], v_1l[2 * i][j], P);
+        fourier_mult(tmp2, v_1r[i], evk1, 2 * N);
+        fourier_add(v_0d[2 * i], tmp1, tmp2, 2 * N);
+
+        for (int j = 0; j < (int) N; j ++)
+            mod_mult(tmp1[j], v_1l[2 * i + 1][j], P);
+        fourier_mult(tmp2, v_1r[i], evk2, 2 * N);
+        fourier_add(v_0d[2 * i + 1], tmp1, tmp2, 2 * N); //v_0d <- P*v1l + v_1r*evk
+
+        for (int ii = 0; ii < 2; ii ++) {
+            ifft(tmp1, v_0d[2 * i + ii], 2 * N);
+            for (int j = 0; j < (int) N; j ++) {
+                for (int k = 0; k < ubits * 4 ; k ++) {
+                    if (mpz_tstbit(tmp1[j], k)) {
+                        mpz_set_ui(V_0c[((i * 2 + ii) * N + j)* ubits * 4 + k], 1);
+                    } else {
+                        mpz_set_ui(V_0c[((i * 2 + ii) * N + j)* ubits * 4 + k], 0);
+                    }
+                }
+            } // set V_0c
+            for (int j = 0; j < (int) N; j ++) {
+                mod_sub(tmp2[j], tmp1[j], tmp1[j + N]);
+                mpz_tdiv_q(tmp2[j], tmp2[j], P);
+                mpz_and(tmp2[j], tmp2[j], mask);
+            }
+            fft(v_0r[2 * i + ii], 2 * N, tmp2, N); //set v_0r to be reduced v_1d
+        }
+   }
+
+
+    //mle construction
+    mpz_t *V_2 = (mpz_t *) malloc(sizeof(mpz_t) * (num * 4)),
+          *V_1l = (mpz_t *) malloc(sizeof(mpz_t) * (num * 2)),
+          *V_1r = (mpz_t *) malloc(sizeof(mpz_t) * num),
+          *V_1d = (mpz_t *) malloc(sizeof(mpz_t) * num),
+          *V_0d = (mpz_t *) malloc(sizeof(mpz_t) * (num * 2)),
+          *V_0r = (mpz_t *) malloc(sizeof(mpz_t) * (num * 2)),
+          EVK1, EVK2;
+    mpz_inits(EVK1, EVK2, 0);
+    for (int i = 0; i < num; i ++) {
+        mpz_inits(V_1d[i], V_1r[i], 0);
+        for (int j = 0; j < 4; j ++)
+            mpz_init(V_2[i * 4 + j]);
+        for (int j = 0; j < 2; j ++)
+            mpz_inits(V_1l[2 * i + j], V_0d[2 * i + j], V_0r[2 * i + j]);
+    }
+    for (int i = 0; i < num; i ++) {
+        for (int j = 0; j < 4; j ++)
+            fourier_extrapolate(V_2[4 * i + j], val, v_2[4 * i + j], 2 * N);
+        for (int j = 0; j < 4; j ++) {
+            fourier_extrapolate(V_1l[2 * i + j], val, v_1l[2 * i + j], 2 * N);
+            fourier_extrapolate(V_0d[2 * i + j], val, v_0d[2 * i + j], 2 * N);
+            fourier_extrapolate(V_0r[2 * i + j], val, v_0r[2 * i + j], 2 * N);
+        }
+        fourier_extrapolate(V_1r[i], val, v_1r[i], 2 * N);
+        fourier_extrapolate(V_1d[i], val, v_1d[i], 2 * N);
+    }
+    fourier_extrapolate(EVK1, val, evk1, 2 * N);
+    fourier_extrapolate(EVK2, val, evk2, 2 * N);
+   
+    
+    //randomness
+    mpz_t *r_0b = (mpz_t *) malloc(sizeof(mpz_t) * ()),
+          *r_0c = (mpz_t *) malloc(sizeof(mpz_t) * ()),
+          *r_1b = (mpz_t *) malloc(sizeof(mpz_t) * ()),
+          *r_1c = (mpz_t *) malloc(sizeof(mpz_t) * ()),
+          *r_2 = (mpz_t *) malloc(sizeof(mpz_t) * ());
+
+    mpz_t *r_2 = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 2)),
+          *r_1l = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1)),
+          *r_1r = (mpz_t *) malloc(sizeof(mpz_t) * log_num),
+          *r_1d = (mpz_t *) malloc(sizeof(mpz_t) * log_num),
+          *r_0d = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1)),
+          *r_0r = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1)),
+          *r_1c = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1 + logN + log_bits)),
+          *r_0c = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 2 + logN + log_bits)),
+          *r_1b = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1 + logN + log_bits)),
+          *r_0b = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 2 + logN + log_bits));
+    for (int i = 0; i < log_num; i ++) {
+        mod_init_random(r_1r[i]);
+        mod_init_random(r_1d[i]);
+    }
+    for (int i = 0; i < log_num + 1; i ++) {
+        mod_init_random(r_1l[i]);
+        mod_init_random(r_0d[i]);
+        mod_init_random(r_0r[i]);
+    }
+    for (int i = 0; i < log_num + 2; i ++)
+        mod_init_random(r_2[i]);
+    for (int i = 0; i < (int) (log_num + 1 + logN + log_bits); i ++)
+        mod_init_random(r_1c[i]);
+    for (int i = 0; i < (int) (log_num + 2 + logN + log_bits); i ++)
+        mod_init_random(r_0c[i]);
+
+    //gkr
+    stat = gkr_cipher_mult(
+        V_0r, V_0c, V_0d,       V_1l, V_1r, V_1c, V_1d,       V_2, 
+        r_0r, r_0c, r_0d, r_0b, r_1l, r_1r, r_1c, r_1d, r_1b, r_2, 
+        P, EVK1, EVK2, 
+        log_num, bits, val
+    );
+
+
+    if (stat)
+        printf("Success\n");
+    else
+        printf("Failed\n");
+
+    return 0;
+}
+
+
+//for rescale;
+int main_rescale(int argc, char **argv)
+{
+    if (argc != 6) {
+        printf("Usage: ./a.out [bit of prime (8k-1)] [logN] [log_num] [bef_bits] [aft_bits].\n");
+        return 0;
+    }
+    long bits_of_prime = atol(argv[1]);
+    int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), bef_bits = atoi(argv[4]), aft_bits = atoi(argv[5]), log_bits = 0, dif_bits = bef_bits - aft_bits, num = 1 << log_num, stat = 1;
+    init_field(bits_of_prime, logN_in); //init field
+    while ((bef_bits - 1) >> ++ log_bits);
+    int ubits = 1 << log_bits;
+    mpz_t base1, base2, val;
+    mpz_inits(base1, base2, val, NULL);
+    mpz_t *poly = (mpz_t *) malloc(sizeof(mpz_t) * N);
+    for (int i = 0; i < (int) N; i ++)
+        mpz_init(poly[i]);
+
+
+    //set val
+    mpz_urandomm(val, STATE, PRIME);
+
+    //circ evaluation & construction
+    mpz_t *v_d = (mpz_t *) malloc(sizeof(mpz_t) * (N * num * 2)),
+          *v_r = (mpz_t *) malloc(sizeof(mpz_t) * (N * num * 2)),
+          *v_c = (mpz_t *) malloc(sizeof(mpz_t) * (N * num * 2 * ubits));
+    
+    for (int i = 0; i < (int) N * num * 2; i ++) {
+        mpz_init_set_ui(v_d[i], 0);
+        mpz_init_set_ui(v_r[i], 0);
+
+        for (int j = 0; j < ubits; j ++) {
+            mpz_init(v_c[i * ubits + j]);
+
+            if (j == 0)
+                mpz_set_ui(base1, 1);
+            if (j == dif_bits)
+                mpz_set_ui(base2, 1);
+
+            if (j < dif_bits) {
+                mpz_urandomb(v_c[i * ubits + j], STATE, 1);
+                mod_mult(val, v_c[i * ubits + j], base1);
+                mod_add(v_d[i], v_d[i], val);
+                mpz_mul_ui(base1, base1, 2);
+            } else if (j < bef_bits) {
+                mpz_urandomb(v_c[i * ubits + j], STATE, 1);
+                mod_mult(val, v_c[i * ubits + j], base1);
+                mod_add(v_d[i], v_d[i], val);
+                mod_mult(val, v_c[i * ubits + j], base2);
+                mod_add(v_r[i], v_r[i], val);
+                mpz_mul_ui(base1, base1, 2);
+                mpz_mul_ui(base2, base2, 2);
+            } else {
+                mpz_set_ui(v_c[i * ubits + j], 0);
+            }
+        }
+    }
+    printf("circuit evaled\n");
+
+
+    //mle construction
+    mpz_t *V_d = (mpz_t *) malloc(sizeof(mpz_t) * num * 2),
+          *V_r = (mpz_t *) malloc(sizeof(mpz_t) * num * 2);
+    for (int i = 0; i < num * 2; i ++) {
+        mpz_inits(V_d[i], V_r[i], NULL);
+        for (int j = 0; j < (int) N; j ++)
+            mpz_set(poly[j], v_d[i * N + j]);
+        coeff_evaluate(V_d[i], val, poly, N);
+        for (int j = 0; j < (int) N; j ++)
+            mpz_set(poly[j], v_r[i * N + j]);
+        coeff_evaluate(V_r[i], val, poly, N);
+    }
+    printf("mle constructed\n");
+
+
+    //randomness
+    mpz_t *r_b = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1 + logN + log_bits)),
+          *r_c = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1 + logN + log_bits));
+    for (int i = 0; i < (int) (log_num + 1 + logN + log_bits); i ++) {
+        mod_init_random(r_b[i]);
+        mod_init_random(r_c[i]);
+    }
+
+
+    //gkr
+    stat = gkr_cipher_rescale(V_r, V_d, v_c, r_c, r_b, log_num, bef_bits, aft_bits, val);
+
+
+    if (stat)
+        printf("Success\n");
+    else
+        printf("Failed\n");
+
+
+    //free
+    for (int i = 0; i < (int) (log_num + 1 + logN + log_bits); i ++)
+        mpz_clears(r_b[i], r_c[i], NULL);
+    free(r_b);
+    free(r_c);
+    for (int i = 0; i < (int) N * num * 2; i ++) {
+        mpz_clears(v_d[i], v_r[i], NULL);
+        for (int j = 0; j < ubits; j ++)
+            mpz_clear(v_c[i * ubits + j]);
+    }
+    for (int i = 0; i <(int) N; i ++)
+        mpz_clear(poly[i]);
+    for (int i = 0; i < num * 2; i ++)
+        mpz_clears(V_d[i], V_r[i], NULL);
+    free(poly);
+    free(V_d);
+    free(V_r);
+    free(v_d);
+    free(v_r);
+    free(v_c);
+    mpz_clears(base1, base2, val, NULL);
+
+    return 0;
+}

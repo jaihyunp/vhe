@@ -17,6 +17,7 @@ void mod_add_ui(mpz_t rop, const mpz_t x, const uint64 y);
 void mod_sub(mpz_t rop, const mpz_t x, const mpz_t y);
 void mod_sub_ui(mpz_t rop, const mpz_t x, const uint64 y);
 void mod_ui_sub(mpz_t rop, const uint64 x, const mpz_t y);
+void mod_1neg(mpz_t rop, const mpz_t r); //set rop to be 1-r mod PRIME
 
 void mod_mult(mpz_t rop, const mpz_t x, const mpz_t y);
 void mod_mult_ui(mpz_t rop, const mpz_t x, const uint64 y);
@@ -24,7 +25,7 @@ void mod_mult_si(mpz_t rop, const mpz_t x, const signed long long y);
 
 void mod_addmul(mpz_t rop, const mpz_t x, const mpz_t y);
 
-//void mod_multG(mpz_t rop, const mpz_t x, const mpz_t y);
+void mod_multG(mpz_t rop, const mpz_t x, const mpz_t y);
 
 void mod_pow(mpz_t rop, const mpz_t x, const mpz_t b);
 void mod_pow_ui(mpz_t rop, const mpz_t x, const uint64 b);

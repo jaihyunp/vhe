@@ -72,6 +72,11 @@ void mod_ui_sub(mpz_t rop, const uint64 x, const mpz_t y)
     mpz_ui_sub(rop, x, y);
     mod(rop, rop);
 }
+void mod_1neg(mpz_t rop, const mpz_t r) //set rop to be 1-r mod PRIME
+{
+    mpz_ui_sub(rop, 1, r);
+    mod(rop, rop);
+}
 
 
 /* Mult */
@@ -95,11 +100,11 @@ void mod_mult_si(mpz_t rop, const mpz_t x, const signed long long y)
 
 
 /* Commit */
-//void mod_multG(mpz_t rop, const mpz_t x, const mpz_t y)
-//{
-//	mpz_mul(rop, x, y);
-//	mpz_mod(rop, rop, GSIZE);
-//}
+void mod_multG(mpz_t rop, const mpz_t x, const mpz_t y)
+{
+	mpz_mul(rop, x, y);
+	mpz_mod(rop, rop, GSIZE);
+}
 
 
 /* Pow */
