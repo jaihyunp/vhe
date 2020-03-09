@@ -1,5 +1,4 @@
 #include "mlmap.h"
-
 void update_V(mpz_t *V, const int num_new, const mpz_t ri)
 {
     mpz_t tmp1, tmp2;
@@ -14,6 +13,7 @@ void update_V(mpz_t *V, const int num_new, const mpz_t ri)
     }
     mpz_clears(tmp1, tmp2, NULL);
 }
+
 
 void evaluate_V(mpz_t rop, const mpz_t *V_in, const int d, const mpz_t *r)
 {

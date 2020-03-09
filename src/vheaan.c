@@ -8,7 +8,7 @@ int sum_check_verification(mpz_t rop, mpz_t **poly, const mpz_t ri, const int de
 
     mod_add(tmp, poly[0][0], poly[0][1]);
     if(mpz_cmp(tmp, ri)) {
-        printf("Fail Sumcheck %s :: 1st sum check\n%s\n%s\n%s\n", str, mpz_get_str(NULL, 10, tmp), mpz_get_str(NULL, 10, ri), mpz_get_str(NULL, 10, PRIME));
+        printf("Fail Sumcheck %s :: 1st sum check\n%s\n%s\n%s\n", str, mpz_get_str(0, digit_rep, tmp), mpz_get_str(0, digit_rep, ri), mpz_get_str(0, digit_rep, PRIME));
         stat = 0;
     }
     
@@ -17,7 +17,7 @@ int sum_check_verification(mpz_t rop, mpz_t **poly, const mpz_t ri, const int de
         for(int round = 1; round < num_rounds; round ++) {
             mod_add(tmp, poly[round][0], poly[round][1]);
             if(mpz_cmp(tmp, extrap_val)) {
-                printf("Fail sumcheck %s :: %dth round %s %s\n", str, round, mpz_get_str(NULL, 10, tmp), mpz_get_str(NULL, 10, extrap_val));
+                printf("Fail sumcheck %s :: %dth round %s %s\n", str, round, mpz_get_str(0, digit_rep, tmp), mpz_get_str(0, digit_rep, extrap_val));
                 stat = 0;
                 break;
             } else {
@@ -36,22 +36,568 @@ int sum_check_verification(mpz_t rop, mpz_t **poly, const mpz_t ri, const int de
     return stat;
 }
 
-int gkr_cipher_mult(
-    const mpz_t *V_0r, const mpz_t *V_0c, const mpz_t *V_0d, 
-    const mpz_t *V_1l, const mpz_t *V_1r, const mpz_t *V_1c, const mpz_t * V_1d,
-    const mpz_t *V_2, 
-    const mpz_t *r_0r, const mpz_t *r_0c, const mpz_t *r_0d, const mpz_t *r_0b,
-    const mpz_t *r_1l, const mpz_t *r_1r, const mpz_t *r_1c, const mpz_t *r_1d, const mpz_t *r_1b, 
-    const mpz_t *r_2, 
-    const mpz_t P, const mpz_t EVK1, const mpz_t EVK2, 
+int gkr_cipher_mult
+(
+    const mpz_t *V_0r, const mpz_t *V_0s, const mpz_t *V_0d,
+    mpz_t *V_0c0, mpz_t *V_0c1,
+    const mpz_t *V_1l, const mpz_t *V_1r, const mpz_t *V_1s, const mpz_t *V_1d,
+    mpz_t *V_1c0, mpz_t * V_1c1,
+    mpz_t *V_2, 
+
+    const mpz_t *z_num, const mpz_t *z_N, const mpz_t *z_bits,
+    const mpz_t *r_num, const mpz_t *r_N, const mpz_t *r_bits,
+    const mpz_t P, const mpz_t EVK0, const mpz_t EVK1, 
     const int log_num, const int bits,
     const mpz_t val
 )
 {
+    int num = 1 << log_num;
+    digit_rep = 16;
+    int log_bits = 0;
+    while ((bits - 1) >> ++ log_bits);
+    mpz_t *r = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 2 + logN + 1 + log_bits + 2));
+    for (int i = 0; i < (int) (log_num + 1 + logN + 1 + log_bits + 2); i ++)
+        mpz_init(r[i]);
+    mpz_t v0rz, v0sz, v0dz, v1rz, v1sz, v1dz, v1lz, v2r, tmp1, tmp2, c00r, c01r, c10r, c11r, tmp0, tmp3, tmp4, tmp5, tmp6, BITMAX, BITINV;
+    mpz_inits(v0rz, v0sz, v0dz, v1rz, v1sz, v1dz, v1lz, v2r, tmp1, tmp2, c00r, c01r, c10r, c11r, tmp0, tmp3, tmp4, tmp5, tmp6, BITMAX, BITINV, 0);
+    mod_ui_pow_ui(BITMAX, 2, (1ULL << (log_bits + 2)) - 1);
+    mod_inv_pow2(BITINV, bits);
+    //First, get claimed value of V1*, V0* (w/o commits) on random point.
+    //Pv-side (in the case of V_0r, Vf might should evaluate it too!)
+    for (int i = 0; i < log_num; i ++)
+        mpz_set(r[i], z_num[i + 1]);
+    evaluate_V(v1rz, V_1r, log_num, r);
+    evaluate_V(v1sz, V_1s, log_num, r);
+    evaluate_V(v1dz, V_1d, log_num, r); 
+    for (int i = 0; i < log_num + 1; i ++)
+        mpz_set(r[i], z_num[i]);
+    evaluate_V(v0sz, V_0s, log_num + 1, r);
+    evaluate_V(v0dz, V_0d, log_num + 1, r);
+    evaluate_V(v1lz, V_1l, log_num + 1, r);  
+    evaluate_V(v0rz, V_0r, log_num + 1, r); //Vf also should do this.
+
+    //Vf-side
+    for (int i = 0; i < log_num + 2; i ++)
+        mpz_set(r[i], r_num[i]);
+    evaluate_V(v2r, V_2, log_num + 2, r);  
+
+    //Commit Phase: this actually should be done at Fourth.
+    //c00
+    for (int i = 0; i < log_num + 1; i ++)
+        mpz_set(r[i + logN + 1 + log_bits + 2], r_num[i + 1]);
+    for (int i = 0; i < (int) logN + 1; i ++)
+        mpz_set(r[i + log_bits + 2], r_N[i]);
+    for (int i = 0; i < log_bits + 2; i ++)
+        mpz_set(r[i], r_bits[i]);
+    evaluate_V(c00r, V_0c0, log_num + 1 + logN + 1 + log_bits + 2, r);
+    //c01
+    for (int i = 0; i < log_num + 1; i ++)
+        mpz_set(r[i + logN + log_bits + 2], r_num[i + 1]);
+    for (int i = 0; i < (int) logN; i ++)
+        mpz_set(r[i + log_bits + 2], r_N[i]);
+    for (int i = 0; i < log_bits + 2; i ++)
+        mpz_set(r[i], r_bits[i]);
+    evaluate_V(c01r, V_0c1, log_num + 1 + logN + log_bits + 2, r);
+    //c10
+    for (int i = 0; i < log_num; i ++)
+        mpz_set(r[i + logN + 1 + log_bits + 2], r_num[i + 1]);
+    for (int i = 0; i < (int) logN + 1; i ++)
+        mpz_set(r[i + log_bits + 2], r_N[i]);
+    for (int i = 0; i < log_bits + 2; i ++)
+        mpz_set(r[i], r_bits[i]);
+    evaluate_V(c10r, V_1c0, log_num + logN + 1 + log_bits + 2, r);
+    //c11
+    for (int i = 0; i < log_num; i ++)
+        mpz_set(r[i + logN + log_bits + 2], r_num[i + 1]);
+    for (int i = 0; i < (int) logN; i ++)
+        mpz_set(r[i + log_bits + 2], r_N[i]);
+    for (int i = 0; i < log_bits + 2; i ++)
+        mpz_set(r[i], r_bits[i]);
+    evaluate_V(c11r, V_1c1, log_num + logN + log_bits + 2, r);
+
+
+
+    //Second, check the relationship between V1l, V1r and V0d.
+    mod_1neg(tmp1, z_num[0]);
+    mod_mult(tmp1, tmp1, EVK0);
+    mod_mult(tmp2, z_num[0], EVK1); 
+    mod_add(tmp1, tmp1, tmp2);
+    mod_mult(tmp1, tmp1, v1rz); //tmp1 <- ((1-r)*EVK0+r*EVK1)*v1rr
+    mod_mult(tmp2, P, v1lz); //tmp2 <- P*v1lr
+    mod_add(tmp1, tmp1, tmp2);
+    if (mpz_cmp(tmp1, v0dz)) {
+        printf("F.A.I.L.\n%s\n%s\n", mpz_get_str(0, digit_rep, tmp1), mpz_get_str(0, digit_rep, v0dz));
+    } else {
+        printf("S.U.C.C.E.E..ee.s.:-)\n");
+    }
+   
+    
+    //Third, check the GKR protocols connecting lower layers to upper layers.
+    // Check 14 GKR protocols simultaneously.
+    mpz_t *beta_num = (mpz_t *) malloc(sizeof(mpz_t) * num * 2),
+          *beta_num_2 = (mpz_t *) malloc(sizeof(mpz_t) * num),
+          *beta_N = (mpz_t *) malloc(sizeof(mpz_t) * N * 2),
+          *beta_bits = (mpz_t *) malloc(sizeof(mpz_t) * (1ULL << log_bits) * 4),
+          *alpha_4q = (mpz_t *) malloc(sizeof(mpz_t) * (1ULL << log_bits) * 4),
+          *alpha_2q = (mpz_t *) malloc(sizeof(mpz_t) * (1ULL << log_bits) * 4),
+          *alpha_q = (mpz_t *) malloc(sizeof(mpz_t) * (1ULL << log_bits) * 4),
+          *tau_N = (mpz_t *) malloc(sizeof(mpz_t) * N),
+          *tau_2N = (mpz_t *) malloc(sizeof(mpz_t) * N * 2),
+          *V_2_00 = (mpz_t *) malloc(sizeof(mpz_t) * num),
+          *V_2_01 = (mpz_t *) malloc(sizeof(mpz_t) * num),
+          *V_2_10 = (mpz_t *) malloc(sizeof(mpz_t) * num),
+          *V_2_11 = (mpz_t *) malloc(sizeof(mpz_t) * num);
+    mpz_t **poly_1l = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 2)),
+          **poly_1d2 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 2)),
+          **poly_1d = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + 1 + log_bits + 2)),
+          **poly_1s0 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + 1 + log_bits + 2)),
+          **poly_1b0 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + 1 + log_bits + 2)),
+          **poly_1r = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + log_bits + 2)),
+          **poly_1s1 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + log_bits + 2)),
+          **poly_1b1 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + log_bits + 2)),
+          **poly_0d = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + 1 + log_bits + 2)),
+          **poly_0s0 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + 1 + log_bits + 2)),
+          **poly_0b0 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + 1 + log_bits + 2)),
+          **poly_0r = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + log_bits + 2)),
+          **poly_0s1 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + log_bits + 2)),
+          **poly_0b1 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + log_bits + 2));
+    mpz_t bn[4], bn2[4], bN[4], bb[4], a4q[4], a2q[4], aq[4], tN1[4], t2N[4], tN2[4], c00[4], c01[4], c10[4], c11[4], v200[4], v201[4], v210[4], v211[4];
+printf("1\n");
+    for (int i = 0; i < num; i ++) {
+        mpz_inits(V_2_00[i], V_2_01[i], V_2_10[i], V_2_11[i], beta_num[i], 0);
+        mpz_set(V_2_00[i], V_2[i * 4]);
+        mpz_set(V_2_01[i], V_2[i * 4 + 1]);
+        mpz_set(V_2_10[i], V_2[i * 4 + 2]);
+        mpz_set(V_2_11[i], V_2[i * 4 + 3]);
+    }
+    for (int i = 0; i < num * 2; i ++)
+        mpz_init(beta_num[i]);
+    for (int i = 0; i < num; i ++)
+        mpz_init(beta_num_2[i]);
+    for (int i = 0; i < (int) N; i ++)
+        mpz_inits(tau_N[i], 0);
+    for (int i = 0; i < (int) N * 2; i ++)
+        mpz_inits(beta_N[i], tau_2N[i], 0);
+    for (int i = 0; i < (1 << (log_bits + 2)); i ++)
+        mpz_inits(beta_bits[i], alpha_4q[i], alpha_2q[i], alpha_q[i], 0);
+    initialize_beta(beta_num, log_num + 1, z_num);
+    for (int i = 0; i < log_num; i ++)
+        mpz_set(r[i], z_num[i + 1]);
+    initialize_beta(beta_num_2, log_num, r);
+    initialize_beta(beta_N, logN + 1, z_N);
+    initialize_tau(tau_N, logN, val);
+    initialize_tau(tau_2N, logN + 1, val);
+    initialize_beta(beta_bits, log_bits + 2, z_bits);
+    initialize_alpha(alpha_4q, log_bits + 2, bits * 4);
+    initialize_alpha(alpha_2q, log_bits + 2, bits * 2);
+    initialize_alpha(alpha_q, log_bits + 2, bits);
+    for (int i = 0; i < 4; i ++)
+        mpz_inits(bn[i], bn2[i], bN[i], bb[i], a4q[i], a2q[i], aq[i], tN1[i], t2N[i], tN2[i], c00[i], c01[i], c10[i], c11[i], v210[i], v200[i], v201[i], v211[i], 0);
+    for (int i = 0; i < log_num + 2; i ++) {
+        poly_1l[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        poly_1d2[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        for (int j = 0; j < 4; j ++) {
+            mpz_init_set_ui(poly_1l[i][j], 0);
+            mpz_init_set_ui(poly_1d2[i][j], 0);
+        }
+    }
+    for (int i = 0; i < (int) (log_num + logN + 1 + log_bits + 2); i ++) {
+        poly_1d[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        poly_1s0[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        poly_1b0[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        for (int j = 0; j < 4; j ++) {
+            mpz_init_set_ui(poly_1d[i][j], 0);
+            mpz_init_set_ui(poly_1s0[i][j], 0);
+            mpz_init_set_ui(poly_1b0[i][j], 0);
+        }
+    }
+    for (int i = 0; i < (int) (log_num + logN + log_bits + 2); i ++) {
+        poly_1r[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        poly_1s1[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        poly_1b1[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        for (int j = 0; j < 4; j ++) {
+            mpz_init_set_ui(poly_1r[i][j], 0);
+            mpz_init_set_ui(poly_1s1[i][j], 0);
+            mpz_init_set_ui(poly_1b1[i][j], 0);
+        }
+    }
+    for (int i = 0; i < (int) (log_num + 1 + logN + 1 + log_bits + 2); i ++) {
+        poly_0d[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        poly_0s0[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        poly_0b0[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        for (int j = 0; j < 4; j ++) {
+            mpz_init_set_ui(poly_0d[i][j], 0);
+            mpz_init_set_ui(poly_0s0[i][j], 0);
+            mpz_init_set_ui(poly_0b0[i][j], 0);
+        }
+    }
+    for (int i = 0; i < (int) (log_num + 1 + logN + log_bits + 2); i ++) {
+        poly_0r[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        poly_0s1[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        poly_0b1[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        for (int j = 0; j < 4; j ++) {
+            mpz_init_set_ui(poly_0r[i][j], 0);
+            mpz_init_set_ui(poly_0s1[i][j], 0);
+            mpz_init_set_ui(poly_0b1[i][j], 0);
+            mpz_inits(poly_0r[i][j], poly_0s1[i][j], poly_0b1[i][j], 0);
+        }
+    }
+    printf("memory allocated\n");
+
+    uint64 num_terms_num = 1ULL << (log_num + 1);
+    uint64 num_terms_N = 1ULL << (logN + 1);
+    uint64 num_terms_bits = 1ULL << (log_bits + 2);
+    for (int round = 0; round < log_num + 1; round ++) {
+        for (uint64 j = 0; j < num_terms_num / 2; j ++) {
+            //evaluate mle
+            mlmap_evaluation_N(bn, 4, num_terms_num, j, beta_num);
+            if ((round < log_num) && (!(j & 1)))
+                mlmap_evaluation_N(bn2, 4, num_terms_num >> 1, j >> 1, beta_num_2);
+
+            for (uint64 k = 0; k < num_terms_N; k ++) {
+                //evaluate mle
+                mlmap_evaluation_N(bN, 4, 0, k, beta_N);
+                mlmap_evaluation_N(tN1, 4, 0, k >> 1, tau_N);
+                mlmap_evaluation_N(tN2, 4, 0, k & (num_terms_N / 2 - 1), tau_2N);
+                mlmap_evaluation_N(t2N, 4, 0, k, tau_2N);
+
+
+                for (uint64 t = 0; t < num_terms_bits; t ++) {
+                    //evaluate mle
+                    mlmap_evaluation_N(a4q, 4, 0, t, alpha_4q);
+                    mlmap_evaluation_N(a2q, 4, 0, t, alpha_2q);
+                    mlmap_evaluation_N(aq, 4, 0, t, alpha_q);
+                    mlmap_evaluation_N(bb, 4, 0, t, beta_bits);
+                    
+                    if ((round < log_num) && (!(j & 1))) {//앞쪽 randomness를 활용
+                        mlmap_evaluation_N(c10, 4, num_terms_num << (-1 + logN + 1 + log_bits + 2), ((((j >> 1) << (logN + 1)) + k) << (log_bits + 2)) + t, V_1c0);
+
+                        
+                        for (uint64 l = 0; l < 4; l ++) {
+                            //poly_1b0
+                            mod_sub_ui(tmp1, c10[l], 1);
+                            mod_mult(tmp1, tmp1, c10[l]);
+                            mod_mult(tmp1, tmp1, bn2[l]);
+                            mod_mult(tmp1, tmp1, bN[l]);
+                            mod_mult(tmp1, tmp1, bb[l]);
+                            mod_add(poly_1b0[round][l], poly_1b0[round][l], tmp1);
+
+                            //poly_1d
+                            mod_mult(tmp1, bn2[l], t2N[l]);
+                            mod_mult(tmp1, tmp1, a4q[l]);
+                            mod_mult(tmp1, tmp1, c10[l]);
+                            mod_add(poly_1d[round][l], poly_1d[round][l], tmp1);
+
+                            //poly_1s0
+                            if (k >> logN) {
+                                mod_ui_sub(tmp1, 0, c00[l]);
+                                mod_mult(tmp1, tmp1, a4q[l]);
+                                mod_mult(tmp1, tmp1, tN2[l]);
+                                mod_mult(tmp1, tmp1, bn2[l]);
+                                if (!t){
+                                    mod_mult(tmp2, bn2[l], tN2[l]);
+                                    mod_mult(tmp2, tmp2, BITMAX);
+                                    mod_add(tmp1, tmp1, tmp2);
+                                }
+                            } else {
+                                mod_mult(tmp1, a4q[l], tN2[l]);
+                                mod_mult(tmp1, tmp1, c00[l]);
+                                mod_mult(tmp1, tmp1, bn2[l]);
+                            }
+                            mod_add(poly_1s0[round][l], poly_1s0[round][l], tmp1);
+                        }
+
+                        if (!(k & 1)) { //얘도 그냥 앞쪽을 활용하자: 이를 통해 bN을 쉽게 계산..
+                            mlmap_evaluation_N(c11, 4, num_terms_num << (-1 + logN + log_bits + 2), ((((j >> 1) << logN) + (k >> 1)) << (log_bits + 2)) + t, V_1c1);
+                            for (uint64 l = 0; l < 4; l ++) {
+                                //poly_1b1
+                                mod_sub_ui(tmp1, c11[l], 1);
+                                mod_mult(tmp1, tmp1, c11[l]);
+                                mod_mult(tmp1, tmp1, bn2[l]);
+                                mod_mult(tmp1, tmp1, bN[l]);
+                                mod_mult(tmp1, tmp1, bb[l]);
+                                mod_add(poly_1b1[round][l], poly_1b1[round][l], tmp1);
+
+                                //poly_1s1
+                                mod_mult(tmp1, a4q[l], bn2[l]);
+                                mod_mult(tmp1, tmp1, tN1[l]);
+                                mod_mult(tmp1, tmp1, c11[l]);
+                                mod_add(poly_1s1[round][l], poly_1s1[round][l], tmp1);
+
+                                //poly_1r
+                                mod_sub(tmp1, aq[l], bn2[l]);
+                                mod_mult(tmp1, tmp1, tN1[l]);
+                                mod_mult(tmp1, tmp1, c11[l]);
+                                mod_add(poly_1r[round][l], poly_1r[round][l], tmp1);
+                            }
+
+                        }
+                    }
+
+
+                    mlmap_evaluation_N(c00, 4, num_terms_num << (logN + 1 + log_bits + 2), (((j << (logN + 1)) + k) << (log_bits + 2)) + t, V_0c0);
+
+                    
+                    for (uint64 l = 0; l < 4; l ++) {
+                        //poly_0b0
+                        mod_sub_ui(tmp1, c00[l], 1);
+                        mod_mult(tmp1, tmp1, c00[l]);
+                        mod_mult(tmp1, tmp1, bn[l]);
+                        mod_mult(tmp1, tmp1, bN[l]);
+                        mod_mult(tmp1, tmp1, bb[l]);
+                        mod_add(poly_0b0[round][l], poly_0b0[round][l], tmp1);
+
+                        //poly_0d
+                        mod_mult(tmp1, bn[l], t2N[l]);
+                        mod_mult(tmp1, tmp1, a4q[l]);
+                        mod_mult(tmp1, tmp1, c00[l]);
+                        mod_add(poly_0d[round][l], poly_0d[round][l], tmp1);
+
+                        //poly_0s0
+                        if (k >> logN) {
+                            mod_sub(tmp1, PRIME, bn[l]);
+                            mod_mult(tmp1, tmp1, tN2[l]);
+                            mod_mult(tmp1, tmp1, a4q[l]);
+                            mod_mult(tmp1, tmp1, c00[l]);
+                            if (!t) {
+                                mod_mult(tmp2, bn[l], tN2[l]);
+                                mod_mult(tmp2, tmp2, BITMAX);
+                                mod_add(tmp1, tmp1, tmp2);
+                            }
+                        } else {
+                            mod_mult(tmp1, a4q[l], tN2[l]);
+                            mod_mult(tmp1, tmp1, c00[l]);
+                            mod_mult(tmp1, tmp1, bn[l]);
+                        }
+                        mod_add(poly_0s0[round][l], poly_0s0[round][l], tmp1);
+                    }
+
+                    if (!(k & 1)) { //얘도 그냥 앞쪽을 활용하자: 이를 통해 bN을 쉽게 계산..
+                        mlmap_evaluation_N(c01, 4, num_terms_num << (logN + log_bits + 2), (((j << logN) + (k >> 1)) << (log_bits + 2)) + t, V_0c1);
+                        for (uint64 l = 0; l < 4; l ++) {
+                            //poly_0b1
+                            mod_sub_ui(tmp1, c01[l], 1);
+                            mod_mult(tmp1, tmp1, c01[l]);
+                            mod_mult(tmp1, tmp1, bn[l]);
+                            mod_mult(tmp1, tmp1, bN[l]);
+                            mod_mult(tmp1, tmp1, bb[l]);
+                            mod_add(poly_0b1[round][l], poly_0b1[round][l], tmp1);
+
+                            //poly_0s1
+                            mod_mult(tmp1, a4q[l], bn[l]);
+                            mod_mult(tmp1, tmp1, tN1[l]);
+                            mod_mult(tmp1, tmp1, c01[l]);
+                            mod_add(poly_0s1[round][l], poly_0s1[round][l], tmp1);
+
+                            //poly_0r
+                            mod_sub(tmp1, a2q[l], aq[l]);
+                            mod_mult(tmp1, tmp1, BITINV);
+                            mod_mult(tmp1, tmp1, bn[l]);
+                            mod_mult(tmp1, tmp1, tN1[l]);
+                            mod_mult(tmp1, tmp1, c01[l]);
+                            mod_add(poly_0r[round][l], poly_0r[round][l], tmp1);
+                        }
+                    }
+                }
+            }
+
+            if ((round < log_num) && (j & 1)) {
+                mlmap_evaluation_N(v200, 4, num_terms_num >> 1, j >> 1, V_2_00);
+                mlmap_evaluation_N(v201, 4, num_terms_num >> 1, j >> 1, V_2_01);
+                mlmap_evaluation_N(v210, 4, num_terms_num >> 1, j >> 1, V_2_10);
+                mlmap_evaluation_N(v211, 4, num_terms_num >> 1, j >> 1, V_2_11);
+
+                for (uint64 l = 0; l < 4; l ++) {
+                    //poly_1d
+                    mod_mult(tmp1, v201[l], v211[l]);
+                    mod_mult(tmp1, tmp1, bn[l]);
+                    mod_add(poly_1d[round][l], poly_1d[round][l], tmp1);
+
+                    //poly_1l
+                    mod_1neg(tmp1, z_num[log_num]);
+                    mod_mult(tmp1, tmp1, v200[l]);
+                    mod_mult(tmp1, tmp1, v210[l]);
+                    mod_mult(tmp2, v211[l], v200[l]);
+                    mod_mult(tmp3, v201[l], v210[l]);
+                    mod_add(tmp2, tmp3, tmp2);
+                    mod_mult(tmp2, tmp2, z_num[log_num]);
+                    mod_add(tmp1, tmp1, tmp2);
+                    mod_add(poly_1l[round][l], poly_1l[round][l], tmp1);
+                }
+            }
+        }
+
+        num_terms_num >>= 1;
+        update_V(beta_num, num_terms_num, r_num[log_num + 2 - round - 1]);
+
+        if (round < log_num) {
+            update_V(beta_num_2, num_terms_num >> 1, r_num[log_num + 2 - round - 1]);
+
+            update_V(V_2_00, num_terms_num >> 1, r_num[log_num + 2 - round - 1]);
+            update_V(V_2_01, num_terms_num >> 1, r_num[log_num + 2 - round - 1]);
+            update_V(V_2_10, num_terms_num >> 1, r_num[log_num + 2 - round - 1]);
+            update_V(V_2_11, num_terms_num >> 1, r_num[log_num + 2 - round - 1]);
+
+            update_V(V_1c0, num_terms_num << (-1 + logN + 1 + log_bits + 2), r_num[log_num + 2 - round - 1]);
+            update_V(V_1c1, num_terms_num << (-1 + logN + log_bits + 2), r_num[log_num + 2 - round - 1]);
+        }
+        update_V(V_0c0, num_terms_num << (logN + 1 + log_bits + 2), r_num[log_num + 2 - round - 1]);
+        update_V(V_0c1, num_terms_num << (logN + log_bits + 2), r_num[log_num + 2 - round - 1]);
+    }
+    //Verify
+    int stat = 1;
+    mpz_set_ui(tmp1, 0);
+    for (int i = 0; i < log_num + 1; i ++)
+        mpz_set(r[i], r_num[i + 1]);
+    stat = stat ? sum_check_verification(tmp2, poly_0b0, tmp1, 4, log_num + 1, r, "V0b0") : 0;
+    if(stat)
+        printf("V0b0 Verified\n");
+    stat = stat ? sum_check_verification(tmp2, poly_0b1, tmp1, 4, log_num + 1, r, "V0b1") : 0;
+    if(stat)
+        printf("V0b1 Verified\n");
+    mpz_set(tmp1, v0dz);
+    stat = stat ? sum_check_verification(tmp2, poly_0d, tmp1, 4, log_num + 1, r, "V0d") : 0;
+    if(stat)
+        printf("V0d Verified\n");
+    mpz_set(tmp1, v0rz);
+    stat = stat ? sum_check_verification(tmp2, poly_0r, tmp1, 4, log_num + 1, r, "V0r") : 0;
+    if(stat)
+        printf("V0r Verified\n");
+    stat = 1;
+    mpz_set(tmp1, v0sz);
+    stat = stat ? sum_check_verification(tmp2, poly_0s0, tmp1, 4, log_num + 1, r, "V0s0") : 0;
+    if(stat)
+        printf("V0s0 Verified\n");
+    stat = 1;
+    stat = stat ? sum_check_verification(tmp2, poly_0s1, tmp1, 4, log_num + 1, r, "V0s1") : 0;
+    if(stat)
+        printf("V0s1 Verified\n");
+
+    stat = 1;
+    mpz_set_ui(tmp1, 0); 
+    for (int i = 0; i < log_num; i ++)
+        mpz_set(r[i], r_num[i + 2]);
+    stat = stat ? sum_check_verification(tmp2, poly_1b0, tmp1, 4, log_num, r, "V1b0") : 0;
+    if(stat)
+        printf("V1b0 Verified\n");
+    stat = 1;
+    stat = stat ? sum_check_verification(tmp2, poly_1b1, tmp1, 4, log_num, r, "V1b1") : 0;
+    if(stat)
+        printf("V1b1 Verified\n");
+    stat = 1;
+    mpz_set(tmp1, v0dz);
+    stat = stat ? sum_check_verification(tmp2, poly_1d, tmp1, 4, log_num, r, "V1d") : 0;
+    if(stat)
+        printf("V1d Verified\n");
+    mpz_set(tmp1, v0rz);
+    stat = stat ? sum_check_verification(tmp2, poly_1r, tmp1, 4, log_num, r, "V1r") : 0;
+    if(stat)
+        printf("V1r Verified\n");
+    stat = 1;
+    mpz_set(tmp1, v0sz);
+    stat = stat ? sum_check_verification(tmp2, poly_1s0, tmp1, 4, log_num, r, "V1s0") : 0;
+    if(stat)
+        printf("V1s0 Verified\n");
+    stat = 1;
+    stat = stat ? sum_check_verification(tmp2, poly_1s1, tmp1, 4, log_num, r, "V1s1") : 0;
+    if(stat)
+        printf("V1s1 Verified\n");
+
+
+
+
+    for (int round = 0; round < (int) logN + 1; round ++) {
+        for (uint64 j = 0; j < num_terms_N / 2; j ++) {
+            for (uint64 k = 0; k < num_terms_bits / 2; k ++) {
+                
+            }
+        }        
+    }
+    for (int round = 0; round < log_bits + 2; round ++) {
+        for (uint64 j = 0; j < num_terms_bits / 2; j ++) {
+
+        }
+    }
+
+    
+    //Fourth, check the clamied value of the commited MLE is consistent with the committed values.
+    //Currently, ommitted.
+
+    
+    //Fifth, Check the result of GKR protocol w/ the precalculated value.
+    if (mpz_cmp(tmp5, v2r)) {
+        printf("F.A.I.L. (V2)\n%s\n%s\n", mpz_get_str(0, digit_rep, tmp5), mpz_get_str(0, digit_rep, v2r));
+    } else {
+        printf("Succececesesese\n");
+    }
+
     return 0;
 }
 
-
+//    //Fifth, get the claimed value of V2[0]~V2[3].
+//    //!can boost up here!
+//    for (int i = 0; i < log_num; i ++)
+//        mpz_set(r[i + 2], r_num[i + 1]);
+//    for (int i = 0; i < 2; i ++)
+//        mpz_set_ui(r[i], (0 >> i) & 1);
+//    evaluate_V(tmp0, V_2, log_num + 2, r);
+//    for (int i = 0; i < 2; i ++)
+//        mpz_set_ui(r[i], (1 >> i) & 1);
+//    evaluate_V(tmp1, V_2, log_num + 2, r);
+//    for (int i = 0; i < 2; i ++)
+//        mpz_set_ui(r[i], (2 >> i) & 1);
+//    evaluate_V(tmp2, V_2, log_num + 2, r);
+//    for (int i = 0; i < 2; i ++)
+//        mpz_set_ui(r[i], (3 >> i) & 1);
+//    evaluate_V(tmp3, V_2, log_num + 2, r);
+//
+//
+//    //Check the consistency between the claimed V2[i] and V1d.
+//    mpz_t *poly_b = (mpz_t *) malloc(sizeof(mpz_t) * ());
+//    mod_mult(tmp4, tmp1, tmp3);
+//    printf("Hello~~~~~\n%s\n%s\n",
+//        mpz_get_str(0, digit_rep, tmp4),
+//        mpz_get_str(0, digit_rep, v1dr));
+//    mod_mult(tmp5, V_2[1], V_2[3]);
+//    printf("YAAAAA\n%s\n%s\n", 
+//        mpz_get_str(0, digit_rep, V_1d[0]),
+//        mpz_get_str(0, digit_rep, tmp5));
+//
+//
+//    //Check the consistency between the claimed V2[i] and V1l.
+//    mod_1neg(tmp4, r_num[0]);
+//    mod_mult(tmp4, tmp4, tmp0);
+//    mod_mult(tmp4, tmp4, tmp2);//(1-r)v2(0)v2(2)
+//    mod_mult(tmp5, tmp1, tmp2);
+//    mod_mult(tmp6, tmp0, tmp3);
+//    mod_add(tmp5, tmp5, tmp6);
+//    mod_mult(tmp5, tmp5, r_num[0]);//r(v2(0)v2(3)+v2(1)v2(2))
+//    mod_add(tmp4, tmp4, tmp5);
+//    if (mpz_cmp(tmp4, v1lr)) {
+//        printf("F.A.I.L. (v1l)\n%s\n%s\n", mpz_get_str(0, digit_rep, tmp4), mpz_get_str(0, digit_rep, v1lr));
+//    } else {
+//        printf("S.u.cc..c.e.s.ssss\n");
+//    }
+//
+//
+//
+//    //Evaluate V2[r] from V2[i]
+//    mod_1neg(tmp4, r_2[1]);
+//    mod_1neg(tmp5, r_2[0]);
+//    mod_mult(tmp4, tmp4, tmp5);
+//    mod_mult(tmp5, tmp4, tmp0);//(1-r1)(1-r0)V2(00)
+//    mod_1neg(tmp4, r_2[1]);
+//    mod_mult(tmp4, tmp4, r_2[0]);
+//    mod_mult(tmp4, tmp4, tmp1);//(1-r1)r0V2(01)
+//    mod_add(tmp5, tmp5, tmp4);
+//    mod_1neg(tmp4, r_2[0]);
+//    mod_mult(tmp4, tmp4, r_2[1]);
+//    mod_mult(tmp4, tmp4, tmp2);//r1(1-r0)V2(10)
+//    mod_add(tmp5, tmp5, tmp4);
+//    mod_mult(tmp4, r_2[0], r_2[1]);
+//    mod_mult(tmp4, tmp4, tmp3);//r1r0V2(11)
+//    mod_add(tmp5, tmp5, tmp4);
+ 
 int gkr_cipher_rescale
 (
     const mpz_t *V_r_in, const mpz_t *V_d_in,
@@ -86,8 +632,8 @@ int gkr_cipher_rescale
           **poly_d = (mpz_t **) malloc(sizeof(mpz_t *) * (1 + log_num + logN + log_bits)),
           **poly_r = (mpz_t **) malloc(sizeof(mpz_t *) * (1 + log_num + logN + log_bits)),
           *tmps1 = (mpz_t *) malloc(sizeof(mpz_t) * (1 + log_num + logN + log_bits)),
-          *tmps2 = (mpz_t *) malloc(sizeof(mpz_t) * (1 + log_num + logN + log_bits)),
-          *r_d = (mpz_t *) malloc(sizeof(mpz_t) * (1 + log_num));
+          *tmps2 = (mpz_t *) malloc(sizeof(mpz_t) * (1 + log_num + logN + log_bits));
+          //*r_d = (mpz_t *) malloc(sizeof(mpz_t) * (1 + log_num));
 
     for (int i = 0; i < (int) num * 2; i ++)
         mpz_inits(beta_h[i], 0);
@@ -114,6 +660,7 @@ int gkr_cipher_rescale
         mpz_set(tmps2[i], r_b[i + logN + log_bits]);
     }
     printf("GKR Rescale: Memory allocated\n");
+
 
 
     //init mle
@@ -204,7 +751,7 @@ int gkr_cipher_rescale
             update_V(alpha2, num_terms, r_c[1 + log_num + logN + log_bits - round - 1]);
         }
     }
-    printf("GKR Prove: Proof generated\n");
+    printf("GKR Rescale: Proof generated\n");
 
     //Verify
     mpz_set_ui(tmp1, 0);
@@ -242,10 +789,433 @@ int gkr_cipher_rescale
     }
     if(stat)
         printf("Vd Verified\n");
-    printf("GKR Verify: Verification complete (%d)\n", stat);
+    printf("GKR Rescale: Verified (%d)\n", stat);
 
     return stat;
 }
+//
+//int gkr_cipher_mult
+//(
+//    const mpz_t *V_0r, const mpz_t *V_0s, const mpz_t *V_0d,
+//    const mpz_t *V_0c0, const mpz_t *V_0c1,
+//    const mpz_t *V_1l, const mpz_t *V_1r, const mpz_t *V_1s, const mpz_t *V_1d,
+//    const mpz_t *V_1c0, const mpz_t * V_1c1,
+//    const mpz_t *V_2, 
+//
+//    const mpz_t *r_num, 
+//    const mpz_t *r_0, const mpz_t *r_1, const mpz_t *r_2,
+//    const mpz_t P, const mpz_t EVK1, const mpz_t EVK2, 
+//    const int log_num, const int bits,
+//    const mpz_t val
+//)
+//{
+//    digit_rep = 16;
+//    int log_bits = 0;
+//    while ((bits - 1) >> ++ log_bits);
+//    int ubits = 1 << log_bits, num = 1 << log_num, stat = 1;
+//    uint64 num_terms;
+//
+//    mpz_t tmp1, tmp2, scale, c00r, c01r, c10r, c11r, a1r, a2r, bhr, btr, tr, v2r, v0rr;
+//    mpz_inits(tmp1, tmp2, scale, c00r, c01r, c10r, c11r, a1r, a2r, bhr, btr, tr, v2r, v0rr, 0);
+//
+//    mpz_t bh[4], bt[4], c00[4], c01[4], c10[4], c11[4], a1[3], a2[3], t[3];
+//    for (int i = 0; i < 4; i ++)
+//        mpz_inits(bb[i], bt[i], c00[i], c01[i], c10[i], c11[i], 0);
+//    for (int i = 0; i < 3; i ++)
+//        mpz_inits(bh[i], a1[i], a2[i], t[i], 0);
+//    
+//    mpz_t *beta_Al = (mpz_t *) malloc(sizeof(mpz_t) * (num *2)),
+//          *beta_As = (mpz_t *) malloc(sizeof(mpz_t) * num),
+//          *beta_Bl = (mpz_t *) malloc(sizeof(mpz_t) * (N * 2)),
+//          *beta_Bs = (mpz_t *) malloc(sizeof(mpz_t) * N),
+//          *beta_C = (mpz_t *) malloc(sizeof(mpz_t) * ubits * 4),
+//
+//          *alpha1 = (mpz_t *) malloc(sizeof(mpz_t) * ubtis * 4),
+//          *alpha2 = (mpz_t *) malloc(sizeof(mpz_t) * ubits * 4),
+//          *alpha3 = (mpz_t *) malloc(sizeof(mpz_t) * ubits * 4),
+//
+//          *tau_l0 = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N),
+//          *tau_l1 = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N),
+//          *tau_s = (mpz_t *) malloc(sizeof(mpz_t) * N),
+//
+//          **poly_1d = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + 1 + log_bits + 2)),
+//          **poly_1s0 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + 1 + log_bits + 2)),
+//          **poly_1s1 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + log_bits + 2)),
+//          **poly_1r = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + log_bits + 2)),
+//          **poly_0d = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + 1 + log_bits + 2)),
+//          **poly_0s0 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + 1 + log_bits + 2)),
+//          **poly_0s1 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + log_bits + 2)),
+//          **poly_0r = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + log_bits + 2)),
+//          **poly_1b0 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + 1 + log_bits + 2)),
+//          **poly_1b1 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + logN + log_bits + 2)),
+//          **poly_0b0 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + 1 + log_bits + 2)),
+//          **poly_0b1 = (mpz_t **) malloc(sizeof(mpz_t *) * (log_num + 1 + logN + log_bits + 2)),
+//          
+//          *tmps1 = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1 + logN + 1 + log_bits + 2)),
+//          *tmps2 = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1 + logN + 1 + log_bits + 2));
+//
+//    for (int i = 0; i < 2 * num; i ++) 
+//        mpz_init(beta_Al[i]);
+//    for (int i = 0; i < num; i ++)
+//        mpz_init(beta_As[i]);
+//    for (int i = 0; i < N * 2; i ++)
+//        mpz_init(beta_Bl[i]);
+//    for (int i = 0; i < N; i ++)
+//        mpz_init(beta_Bs[i]);
+//    for (int i = 0; i < ubits * 4; i ++)
+//        mpz_init(beta_C[i]);
+//    for (int i = 0; i < ubits * 4; i ++)
+//        mpz_inits(alpha1[i], alpha2[i], alpha3[i], 0);
+//    for (int i = 0; i < 2 * N; i ++)
+//        mpz_inits(tau_l0[i], tau_l1[i], 0);
+//    for (int i = 0; i < N; i ++)
+//        mpz_init(tau_s[i]);
+//    for (int i = 0; i < (int) (log_num + logN + 1 + log_bits + 2); i ++) {
+//        poly_1d[i] = (mpz_t *) malloc(sizeof(mpz_t) * 3);
+//        poly_1s0[i] = (mpz_t *) malloc(sizeof(mpz_t) * 3);
+//        poly_1b0[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+//        for (int j = 0; j < 3; j ++)
+//            mpz_inits(poly_1d[i][j], poly_1s0[i], 0);
+//        for (int j = 0; j < 4; j ++)
+//            mpz_init(poly_1b0[i][j]);
+//    }
+//    for (int i = 0; i < (int) (log_num + logN + log_bits + 2); i ++) {
+//        poly_1r[i] = (mpz_t *) malloc(sizeof(mpz_t) * 3);
+//        poly_1s1[i] = (mpz_t *) malloc(sizeof(mpz_t) * 3);
+//        poly_1b1[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+//        for (int j = 0; j < 3; j ++)
+//            mpz_inits(poly_1r[i][j], poly_1s1[i], 0);
+//        for (int j = 0; j < 4; j ++)
+//            mpz_init(poly_1b1[i][j]);
+//    }
+//    for (int i = 0; i < (int) (log_num + 1 + logN + 1 + log_bits + 2); i ++) {
+//        poly_0d[i] = (mpz_t *) malloc(sizeof(mpz_t) * 3);
+//        poly_0s0[i] = (mpz_t *) malloc(sizeof(mpz_t) * 3);
+//        poly_0b0[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+//        for (int j = 0; j < 3; j ++)
+//            mpz_inits(poly_0d[i][j], poly_0s0[i], 0);
+//        for (int j = 0; j < 4; j ++)
+//            mpz_init(poly_0b0[i][j]);
+//    }
+//    for (int i = 0; i < (int) (log_num + 1 + logN + log_bits + 2); i ++) {
+//        poly_0r[i] = (mpz_t *) malloc(sizeof(mpz_t) * 3);
+//        poly_0s1[i] = (mpz_t *) malloc(sizeof(mpz_t) * 3);
+//        poly_0b1[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+//        for (int j = 0; j < 3; j ++)
+//            mpz_inits(poly_0r[i][j], poly_0s1[i], 0);
+//        for (int j = 0; j < 4; j ++)
+//            mpz_init(poly_0b1[i][j]);
+//    }
+//    for (int i = 0; i < (int) (log_num + 1 + logN + 1 + log_bits + 2); i ++)
+//        mpz_inits(tmps1[i], tmps2[i], 0);
+//    printf("GKR Mult: Memory allocated\n");
+//
+//
+//    //init mle
+//    initialize_beta(beta_Al, log_num + 1, );
+//    initialize_beta(beta_As, log_num, );
+//    initialize_beta(beta_Bl, logN + 1, );
+//    initialize_beta(beta_Bs, logN, );
+//    initialize_beta(beta_C, log_bits + 2, );
+//    initialize_alpha(alpha1, log_bits + 2, bits);
+//    initialize_alpha(alpha2, log_bits + 2, 2 * bits);
+//    initialize_alpha(alpha3, log_bits + 2, 4 * bits);
+//    initialize_tau(tau_l0, logN + 1, val)
+//    initialize_tau2(tau_l1, logN + 1, val)
+//    initialize_tau(tau_s, logN, val)
+//    for (int i = 0; i < (int) N * num * 2 * (1 << log_bits); i ++)
+//        mpz_init_set(V_c[i], V_c_in[i]);
+//    mod_inv_pow2(scale, dif_bits);
+//    printf("GKR Mult: MLE initialized\n");
+//
+//
+//    //eval mle
+////    evaluate_V(v2r, V_2, log_num + 2, );
+////    evaluate_V(v0rr, V_0r, log_num + 1, );
+////
+////    evaluate_V(c00r, V_0c0, log_num + logN + 1 + log_bits + 2, );
+////    evaluate_V(c01r, V_0c1, log_num + logN + log_bits + 2, );
+////    evaluate_V(c10r, V_1c0, log_num + 1 + logN + 1 + log_bits + 2, );
+////    evaluate_V(c11r, V_1c1, log_num + 1 + logN + log_bits + 2, );
+////
+////    evaluate_beta(bhr, r_b, r_c, log_num);
+////    evaluate_beta(btr, r_b, r_c, logN + log_bits + 2);
+////
+////    evaluate_tau(tr, val, , logN);
+////    
+////    evaluate_alpha(a1r, bits, , log_bits + 2);
+////    evaluate_alpha(a2r, 2 * bits, , log_bits + 2);
+//    printf("GKR Mult: MLE Precomputed\n");
+//
+//
+//
+//    num_terms = 1ULL << (log_num + 1 + logN + 1 + log_bits + 2);
+//    for (uint64 j = 0; j < num_terms / 2; j ++) {
+//        //linear computation
+//        mlmap_evaluation_N(bAl, 4, num_terms >> (logN + 1 + log_bits + 2), j >> (logN + 1 + log_bits + 2), beta_Al);
+//        mlmap_evaluation_N(bAs, 4, 0, (j >> (logN + 1 + log_bits + 2)) & (num * 2 - 1), beta_Als);
+//        mlmap_evaluation_N(bBl, 4, 0, (j >> (log_bits + 2)) & (N * 4 - 1), beta_Bl);
+//        mlmap_evaluation_N(bBs, 4, 0, (j >> (log_bits + 2)) & (N * 2 - 1), beta_Bs);
+//        mlmap_evaluation_N(bC, 4, 0, j & (8 * ubits - 1), beta_C);
+//
+//        mlmap_evaluation_N(c00, 4, num_terms, j, V_0c0);
+//        mlmap_evaluation_N(c01, 4, num_terms, j, V_0c1);
+//
+//        mlmap_evaluation_N(a1, 3, 0, j & (8 * ubits - 1), alpha1);
+//        mlmap_evaluation_N(a2, 3, 0, j & (8 * ubits - 1), alpha2);
+//        mlmap_evaluation_N(a3, 3, 0, j & (8 * ubits - 1), alpha3);
+//
+//        mlmap_evaluation_N(tl0, 3, 0, (j >> (log_bits + 2)) & (N * 4 - 1), tau_l0);
+//        mlmap_evaluation_N(tl1, 3, 0, (j >> (log_bits + 2)) & (N * 4 - 1), tau_l1);
+//        mlmap_evaluation_N(ts, 3, 0, (j >> (log_bits + 2)) & (N * 2 - 1), tau_s);
+//
+//
+//        //update poly
+//        for (int k = 0; k < 3; k ++) {
+//            mod_mult(tmp1, bAl[k], a3[k]);
+//            mod_mult(tmp1, tmp1, bBl[k]);
+//            mod_mult(tmp1, tmp1, bC[k]);
+//            mod_mult(tmp1, tmp1, tl0[k]);
+//            mod_mult(tmp1, tmp1, c00[k]);
+//            mod_add(poly_0d[k], poly_0d[k], tmp1);
+//        }
+//        for (int k = 0; k < 3; k ++) {
+//            mod_mult(tmp1, bAl[k], a3[k]);
+//            mod_mult(tmp1, tmp1, bBl[k]);
+//            mod_mult(tmp1, tmp1, bC[k]);
+//            mod_mult(tmp1, tmp1, tl1[k]);
+//            mod_mult(tmp1, tmp1, c00[k]);
+//            mod_add(poly_0s0[k], poly_0s0[k], tmp1);
+//        }
+//        for (int k = 0; k < 3; k ++) {
+//            mod_mult(tmp1, bAl[k], a3[k]);
+//            mod_mult(tmp1, tmp1, bBs[k]);
+//            mod_mult(tmp1, tmp1, bC[k]);
+//            mod_mult(tmp1, tmp1, ts[k]);
+//            mod_mult(tmp1, tmp1, c01[k]);
+//            mod_add(poly_0s1[k], poly_0s1[k], tmp1);
+//        }
+//        for (int k = 0; k < 3; k ++) {
+//            mod_sub(tmp1, a2[k], a1[k]);
+//            mod_add(tmp1, tmp1, P);
+//            mod_mult(tmp1, tmp1, bAl[k]);
+//            mod_mult(tmp1, tmp1, bBs[k]);
+//            mod_mult(tmp1, tmp1, bC[k]);
+//            mod_mult(tmp1, tmp1, a3[k]);
+//            mod_mult(tmp1, tmp1, ts[k]);
+//            mod_mult(tmp1, tmp1, c01[k]);
+//            mod_add(poly_0r[k], poly_0r[k], tmp1);
+//        }
+//        for (int k = 0; k < 4; k ++) {
+//            mod_sub_ui(tmp1, c00[k], 1);
+//            mod_mult(tmp1, tmp1, c00[k]);
+//            mod_mult(tmp1, tmp1, bAl[k]);
+//            mod_mult(tmp1, tmp1, bBl[k]);
+//            mod_mult(tmp1, tmp1, bC[k]);
+//            mod_mult(tmp1, tmp1, tl[k]);
+//            mod_add(poly_0b0[k], poly_0b0[k], tmp1);
+//        }
+//        for (int k = 0; k < 4; k ++) {
+//            mod_sub_ui(tmp1, c01[k], 1);
+//            mod_mult(tmp1, tmp1, c01[k]);
+//            mod_mult(tmp1, tmp1, bAl[k]);
+//            mod_mult(tmp1, tmp1, bBs[k]);
+//            mod_mult(tmp1, tmp1, bC[k]);
+//            mod_mult(tmp1, tmp1, ts[k]);
+//            mod_add(poly_0b1[k], poly_0b1[k], tmp1);
+//        }
+//    }
+//
+//    //update mle
+//    num_terms >>= 1;
+//    mpz_set(r, r_1[log_num + 1 + logN + 1 + log_bits + 2 - 1]);
+//    update_V(beta_Al, num_terms >> (logN + 1 + log_bits + 2), r);
+//    update_V(V_1c0, num_terms, r);
+//    update_V(V_1c1, num_terms, r);
+//
+//
+//    for (int round = 0; round < log_num; i ++) {
+//        for (uint64 j = 0; j < num_terms / 2; j ++) {
+//            //linear computation
+//            mlmap_evaluation_N(bAl, 4, num_terms >> (logN + 1 + log_bits + 2), j >> (logN + 1 + log_bits + 2), beta_Al);
+//            mlmap_evaluation_N(bAs, 4, num_terms >> (logN + 1 + log_bits + 2), j >> (logN + 1 + log_bits + 2), beta_As);
+//            mlmap_evaluation_N(bBl, 4, 0, (j >> (log_bits + 2)) & (N * 4 - 1), beta_Bl);
+//            mlmap_evaluation_N(bBs, 4, 0, (j >> (log_bits + 2)) & (N * 2 - 1), beta_Bs);
+//            mlmap_evaluation_N(bC, 4, 0, j & (8 * ubits - 1), beta_C);
+//
+//            mlmap_evaluation_N(c10, 4, num_terms, j, V_1c0);
+//            mlmap_evaluation_N(c11, 4, num_terms, j, V_1c1);
+//            mlmap_evaluation_N(c00, 4, num_terms, j, V_0c0);
+//            mlmap_evaluation_N(c01, 4, num_terms, j, V_0c1);
+//
+//            mlmap_evaluation_N(a1, 3, 0, j & (8 * ubits - 1), alpha1);
+//            mlmap_evaluation_N(a2, 3, 0, j & (8 * ubits - 1), alpha2);
+//            mlmap_evaluation_N(a3, 3, 0, j & (8 * ubits - 1), alpha3);
+//
+//            mlmap_evaluation_N(tl0, 3, 0, (j >> (log_bits + 2)) & (N * 4 - 1), tau_l0);
+//            mlmap_evaluation_N(tl1, 3, 0, (j >> (log_bits + 2)) & (N * 4 - 1), tau_l1);
+//            mlmap_evaluation_N(ts, 3, 0, (j >> (log_bits + 2)) & (N * 2 - 1), tau_s);
+//
+//
+//            //update poly
+//            for (int k = 0; k < 3; k ++) {
+//                mod_mult(tmp1, bAl[k], a3[k]);
+//                mod_mult(tmp1, tmp1, bBl[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_mult(tmp1, tmp1, tl0[k]);
+//                mod_mult(tmp1, tmp1, c00[k]);
+//                mod_add(poly_0d[k], poly_0d[k], tmp1);
+//            }
+//            for (int k = 0; k < 3; k ++) {
+//                mod_mult(tmp1, bAl[k], a3[k]);
+//                mod_mult(tmp1, tmp1, bBl[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_mult(tmp1, tmp1, tl1[k]);
+//                mod_mult(tmp1, tmp1, c00[k]);
+//                mod_add(poly_0s0[k], poly_0s0[k], tmp1);
+//            }
+//            for (int k = 0; k < 3; k ++) {
+//                mod_mult(tmp1, bAl[k], a3[k]);
+//                mod_mult(tmp1, tmp1, bBs[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_mult(tmp1, tmp1, ts[k]);
+//                mod_mult(tmp1, tmp1, c01[k]);
+//                mod_add(poly_0s1[k], poly_0s1[k], tmp1);
+//            }
+//            for (int k = 0; k < 3; k ++) {
+//                mod_sub(tmp1, a2[k], a1[k]);
+//                mod_add(tmp1, tmp1, P);
+//                mod_mult(tmp1, tmp1, bAl[k]);
+//                mod_mult(tmp1, tmp1, bBs[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_mult(tmp1, tmp1, a3[k]);
+//                mod_mult(tmp1, tmp1, ts[k]);
+//                mod_mult(tmp1, tmp1, c01[k]);
+//                mod_add(poly_0r[k], poly_0r[k], tmp1);
+//            }
+//            for (int k = 0; k < 4; k ++) {
+//                mod_sub_ui(tmp1, c00[k], 1);
+//                mod_mult(tmp1, tmp1, c00[k]);
+//                mod_mult(tmp1, tmp1, bAl[k]);
+//                mod_mult(tmp1, tmp1, bBl[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_mult(tmp1, tmp1, tl[k]);
+//                mod_add(poly_0b0[k], poly_0b0[k], tmp1);
+//            }
+//            for (int k = 0; k < 4; k ++) {
+//                mod_sub_ui(tmp1, c01[k], 1);
+//                mod_mult(tmp1, tmp1, c01[k]);
+//                mod_mult(tmp1, tmp1, bAl[k]);
+//                mod_mult(tmp1, tmp1, bBs[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_mult(tmp1, tmp1, ts[k]);
+//                mod_add(poly_0b1[k], poly_0b1[k], tmp1);
+//            }
+//            for (int k = 0; k < 3; k ++) {
+//                mod_mult(tmp1, bAl[k], a3[k]);
+//                mod_mult(tmp1, tmp1, bBl[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_mult(tmp1, tmp1, tl0[k]);
+//                mod_mult(tmp1, tmp1, c10[k]);
+//                mod_add(poly_1d[k], poly_1d[k], tmp1);
+//            }
+//            for (int k = 0; k < 3; k ++) {
+//                mod_mult(tmp1, bAl[k], a3[k]);
+//                mod_mult(tmp1, tmp1, bBl[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_mult(tmp1, tmp1, tl1[k]);
+//                mod_mult(tmp1, tmp1, c10[k]);
+//                mod_add(poly_1s0[k], poly_1s0[k], tmp1);
+//            }
+//            for (int k = 0; k < 3; k ++) {
+//                mod_mult(tmp1, bAl[k], a3[k]);
+//                mod_mult(tmp1, tmp1, bBs[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_mult(tmp1, tmp1, ts[k]);
+//                mod_mult(tmp1, tmp1, c11[k]);
+//                mod_add(poly_1s1[k], poly_1s1[k], tmp1);
+//            }
+//            for (int k = 0; k < 3; k ++) {
+//                mod_sub(tmp1, a2[k], a1[k]);
+//                mod_add(tmp1, tmp1, P);
+//                mod_mult(tmp1, tmp1, bAl[k]);
+//                mod_mult(tmp1, tmp1, bBs[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_mult(tmp1, tmp1, a3[k]);
+//                mod_mult(tmp1, tmp1, ts[k]);
+//                mod_mult(tmp1, tmp1, c11[k]);
+//                mod_add(poly_1r[k], poly_1r[k], tmp1);
+//            }
+//            for (int k = 0; k < 4; k ++) {
+//                mod_sub_ui(tmp1, c10[k], 1);
+//                mod_mult(tmp1, tmp1, c10[k]);
+//                mod_mult(tmp1, tmp1, bAl[k]);
+//                mod_mult(tmp1, tmp1, bBl[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_add(poly_1b0[k], poly_1b0[k], tmp1);
+//            }
+//            for (int k = 0; k < 4; k ++) {
+//                mod_sub_ui(tmp1, c11[k], 1);
+//                mod_mult(tmp1, tmp1, c11[k]);
+//                mod_mult(tmp1, tmp1, bAl[k]);
+//                mod_mult(tmp1, tmp1, bBs[k]);
+//                mod_mult(tmp1, tmp1, bC[k]);
+//                mod_add(poly_1b1[k], poly_1b1[k], tmp1);
+//            }
+// 
+//        }
+//
+//        num_terms >>= 1;
+//        update_V(beta_Al, )
+//        update_V(beta_As, )
+//        update_V(V_0c0, )
+//        update_V(V_0c1, )
+//        update_V(V_1c0, )
+//        update_V(V_1c1, )
+//    }
+//    printf("GKR Prove: Proof generated\n");
+//
+//    //Verify
+//    mpz_set_ui(tmp1, 0);
+//    stat = stat ? sum_check_verification(tmp2, poly_b, tmp1, 4, 1 + log_num + logN + log_bits, r_c, "Vb") : 0;
+//    mpz_sub_ui(tmp1, cr, 1);
+//    mod_mult(tmp1, tmp1, cr);
+//    mod_mult(tmp1, tmp1, bbr);
+//    if(stat && mpz_cmp(tmp1, tmp2)) { 
+//        stat = 0;
+//        printf("Fail :: Vb does not match %s %s\n", mpz_get_str(NULL, digit_rep, tmp1), mpz_get_str(NULL, digit_rep, tmp2));
+//    }
+//    if(stat)
+//        printf("Vb Verified\n");
+//
+//    stat = stat ? sum_check_verification(tmp2, poly_r, vrr, 3, 1 + log_num + logN + log_bits, r_c, "Vr") : 0;
+//    mod_sub(tmp1, a1r, a2r);
+//    mod_mult(tmp1, tmp1, bhr);
+//    mod_mult(tmp1, tmp1, tr);
+//    mod_mult(tmp1, tmp1, cr);
+//    mod_mult(tmp1, tmp1, scale);
+//    if(stat && mpz_cmp(tmp1, tmp2)) {
+//        stat = 0;
+//        printf("Fail :: Vr does not match %s %s\n", mpz_get_str(NULL, digit_rep, tmp1), mpz_get_str(NULL, digit_rep, tmp2));
+//    }
+//    if(stat)
+//        printf("Vr Verified\n");
+//
+//    stat = stat ? sum_check_verification(tmp2, poly_d, vdr, 3, 1 + log_num + logN + log_bits, r_c, "Vd") : 0;
+//    mod_mult(tmp1, tr, bhr);
+//    mod_mult(tmp1, tmp1, a1r);
+//    mod_mult(tmp1, tmp1, cr);
+//    if(stat && mpz_cmp(tmp1, tmp2)) {
+//        stat = 0;
+//        printf("Fail :: Vd does not match %s %s\n", mpz_get_str(NULL, digit_rep, tmp1), mpz_get_str(NULL, digit_rep, tmp2));
+//    }
+//    if(stat)
+//        printf("Vd Verified\n");
+//    printf("GKR Verify: Verification complete (%d)\n", stat);
+//
+//    return stat;
+//}
+//
 
 
 //int gkr_cipher_mult

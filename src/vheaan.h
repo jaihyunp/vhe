@@ -31,18 +31,20 @@ int gkr_cipher_rescale
     const mpz_t val
 );
 
-int gkr_cipher_mult(
-    const mpz_t *V_0r, const mpz_t *V_0c, const mpz_t *V_0d, 
-    const mpz_t *V_1l, const mpz_t *V_1r, const mpz_t *V_1c, const mpz_t * V_1d,
-    const mpz_t *V_2, 
-    const mpz_t *r_0r, const mpz_t *r_0c, const mpz_t *r_0d, const mpz_t *r_0b,
-    const mpz_t *r_1l, const mpz_t *r_1r, const mpz_t *r_1c, const mpz_t *r_1d, const mpz_t *r_1b, 
-    const mpz_t *r_2, 
-    const mpz_t P, const mpz_t EVK1, const mpz_t EVK2, 
+int gkr_cipher_mult
+(
+    const mpz_t *V_0r, const mpz_t *V_0s, const mpz_t *V_0d,
+    mpz_t *V_0c0, mpz_t *V_0c1,
+    const mpz_t *V_1l, const mpz_t *V_1r, const mpz_t *V_1s, const mpz_t *V_1d,
+    mpz_t *V_1c0, mpz_t *V_1c1,
+    mpz_t *V_2, 
+
+    const mpz_t *z_num, const mpz_t *z_N, const mpz_t *z_bits,
+    const mpz_t *r_num, const mpz_t *r_N, const mpz_t *r_bits,
+    const mpz_t P, const mpz_t EVK0, const mpz_t EVK1,
     const int log_num, const int bits,
     const mpz_t val
 );
-
 
 //int sum_check_cipher_mult();
 //int sum_check_cipher_add();
