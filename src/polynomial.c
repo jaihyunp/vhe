@@ -25,9 +25,7 @@ void _fft(mpz_t *buf, mpz_t *out, const uint64 n, const uint64 step)
 
 void fft(mpz_t *v, const uint64 n, const mpz_t *c, const uint64 deg)
 {
-    printf("bb\n");
     mpz_t *v1 = (mpz_t*) malloc(sizeof(mpz_t) * n);
-    printf("bb\n");
     
     for (uint64 i = 0; i < n; i ++) {
         if (i < deg) {
@@ -37,7 +35,6 @@ void fft(mpz_t *v, const uint64 n, const mpz_t *c, const uint64 deg)
             mpz_init_set_ui(v1[i], 0);
             mpz_set_ui(v[i], 0);
         }
-//        printf("%lld/%lld end\n", i, n);
     }
     _fft(v, v1, n, 1);
 
@@ -51,25 +48,18 @@ void _ifft(mpz_t *buf, mpz_t *out, const uint64 n, const uint64 step)
     mpz_t tmp1; 
     mpz_init(tmp1);
 
-    printf("dd %lld %lld\n", n, step);
     if (step < n) {
         _ifft(out, buf, n, step * 2);
         _ifft(out + step, buf + step, n, step * 2);
 
-    printf("ee %lld %lld\n", n, step);
         for (uint64 i = 0; i < n; i += 2 * step) {
-            printf("AA %lld\n", i);
             if (i == 0)
                 mod_mult(tmp1, ROU[i], out[i + step]);
             else
                 mod_mult(tmp1, ROU[4 * N - i * (2 * N / n)], out[i + step]);
-            printf("BB %lld\n", i);
             mod_add(buf[i / 2], out[i], tmp1);
-            printf("CC %lld\n", i);
             mod_sub(buf[(i + n) / 2], out[i], tmp1);
-            printf("DD %lld\n", i);
         }
-    printf("ff %lld %lld\n", n, step);
     }
 
     mpz_clear(tmp1);
@@ -77,25 +67,20 @@ void _ifft(mpz_t *buf, mpz_t *out, const uint64 n, const uint64 step)
 
 void ifft(mpz_t *c, const mpz_t *v, const uint64 n)
 {
-    printf("cc\n");
     mpz_t *c1 = (mpz_t*) malloc(sizeof(mpz_t) * n), tmp;
     mpz_init(tmp);
-    printf("cc\n");
 
     for(uint64 i = 0; i < n; i ++) {
         mpz_init_set(c1[i], v[i]);
         mpz_set(c[i], v[i]);
     }
-    printf("cc\n");
     _ifft(c, c1, n, 1);
-    printf("cc\n");
 
     mpz_set_ui(tmp, n);
     mod_inv(tmp, tmp);
     for(uint64 i = 0; i < n; i ++) {
         mod_mult(c[i], c[i], tmp);//c[i]<-c[i]/N
     }
-    printf("cc\n");
 
     mpz_clear(tmp);
     for(uint64 i = 0; i < n; i ++)

@@ -24,30 +24,40 @@ int main_poly_mult(int argc, char **argv)
     int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), num = 1 << log_num, stat = 1;
     init_field(bits_of_prime, logN_in); //init field
 
-    mpz_t val, V1z, V2r, tmp;
-    mpz_inits(val, V1z, V2r, tmp, 0);
+    mpz_t val, V1z, V2r, tmp, rir;
+    mpz_inits(val, V1z, V2r, tmp, rir, 0);
     mpz_t *tmp1 = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N),
           *tmp2 = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N),
           *tmp3 = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N);
     for (int i = 0; i < (int) (2 * N); i ++)
         mpz_inits(tmp1[i], tmp2[i], tmp3[i], 0);
 
+    mpz_t *beta = (mpz_t *) malloc(sizeof(mpz_t) * num);          
+    for (int i = 0; i < num; i ++)
+        mpz_init(beta[i]);
+    mpz_t **poly = (mpz_t **) malloc(sizeof(mpz_t *) * log_num);
+    for (int i = 0; i < log_num; i ++) {
+        poly[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
+        for (int j = 0; j < 4; j ++)
+            mpz_init_set_ui(poly[i][j], 0);
+    }
+    mpz_t b[4], V20[4], V21[4];
+    for (int i = 0; i < 4; i ++)
+        mpz_inits(b[i], V20[i], V21[i], 0);
 
     mpz_t **v_2 = (mpz_t **) malloc(sizeof(mpz_t *) * num * 2),
           **v_1 = (mpz_t **) malloc(sizeof(mpz_t *) * num),
-          *V_2 = (mpz_t *) malloc(sizeof(mpz_t *) * num * 2),
-          *V_2_0 = (mpz_t *) malloc(sizeof(mpz_t *) * num),
-          *V_2_1 = (mpz_t *) malloc(sizeof(mpz_t *) * num),
-          *V_1 = (mpz_t *) malloc(sizeof(mpz_t *) * num);
+          *V_2 = (mpz_t *) malloc(sizeof(mpz_t) * num * 2),
+          *V_1 = (mpz_t *) malloc(sizeof(mpz_t) * num);
     for (int i = 0 ; i < num; i ++) {
-        mpz_inits(V_1[i], V_2_0[i], V_2_1[i], 0);
+        mpz_inits(V_1[i], 0);
         v_1[i] = (mpz_t *) malloc(sizeof(mpz_t) * N * 2);
         for (uint64 j = 0; j < N * 2; j ++)
             mpz_init(v_1[i][j]);
     }
     for (int i = 0 ; i < num * 2; i ++) {
         mpz_init(V_2[i]);
-        v_2[i] = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N);
+        v_2[i] = (mpz_t *) malloc(sizeof(mpz_t) * N * 2);
         for (uint64 j = 0; j < N; j ++)
             mod_init_random(v_2[i][j]);
         for (uint64 j = N; j < N * 2; j ++)
@@ -63,9 +73,9 @@ int main_poly_mult(int argc, char **argv)
         fft(tmp2, 2 * N, v_2[2 * i + 1], N);
         fourier_mult(tmp3, tmp1, tmp2, 2 * N);
         ifft(v_1[i], tmp3, 2 * N);
-        printf(" %d aa\n", i);
-    } 
-printf("aa\n");
+    }
+    printf("Circuit evaluated\n"); 
+
     // Vf takes a random point val from our finite field, and Pv construct a reduced MLE circuit with val.
     // THis would be done by both Pv and Vf.
     mod_random(val);
@@ -73,7 +83,7 @@ printf("aa\n");
         coeff_evaluate(V_1[i], val, v_1[i], 2 * N);
     for (int i = 0; i < num * 2; i ++)
         coeff_evaluate(V_2[i], val, v_2[i], N);
-printf("aa\n");
+    printf("MLE constructed\n"); 
 
     // Vf fix the randomness, and precompute the desired values of input and output layer.
     // This would be done by Vf.
@@ -86,25 +96,15 @@ printf("aa\n");
         mod_init_random(r[i]);
     for (int i = 0; i < log_num; i ++)
         mpz_init_set(tmp_r[i], r[i + 1]);
+    printf("Randomness fixed\n"); 
+
     evaluate_V(V1z, V_1, log_num, z);
     evaluate_V(V2r, V_2, log_num + 1, r);
+    printf("Prover Precomputed\n"); 
 
     // The GKR Protocol.
-    mpz_t *beta = (mpz_t *) malloc(sizeof(mpz_t) * num);          
-    for (int i = 0; i < num; i ++)
-        mpz_init(beta[i]);
-    initialize_beta(beta, log_num, z);
-    mpz_t **poly = (mpz_t **) malloc(sizeof(mpz_t *) * log_num);
-    for (int i = 0; i < log_num; i ++) {
-        poly[i] = (mpz_t *) malloc(sizeof(mpz_t) * 4);
-        for (int j = 0; j < 4; j ++)
-            mpz_init_set_ui(poly[i][j], 0);
-    }
-    mpz_t b[4], V20[4], V21[4];
-    for (int i = 0; i < 4; i ++)
-        mpz_inits(b[i], V20[i], V21[i], 0);
-
     //Proof
+    initialize_beta(beta, log_num, z);
     uint64 num_terms = 1ULL << log_num;
     for (int round = 0; round < log_num; round ++) {
         for (uint64 p = 0; p < num_terms / 2; p ++) {
@@ -122,35 +122,43 @@ printf("aa\n");
         update_V(V_2, num_terms << 1, r[log_num + 1- round - 1]);
         update_V(beta, num_terms, r[log_num + 1- round - 1]);
     }
+    printf("Basic GKR Proof done\n");
 
     //Prover now gives proof (consists of poly, V_2[0], V_2[1])
 
     //Verify
-    mpz_t rir;
-    mpz_inits(rir, 0);
     stat = stat ? sum_check_verification(rir, poly, V1z, 4, log_num, tmp_r, "Poly Mult") : 0;
     if (stat)
-        printf("Mult over Poly Verified\n");
+        printf("Basic GKR Verified\n");
 
-    evaluate_beta(tmp, z, tmp_r, log_num);
-    mod_mult(tmp, tmp, V_2[0]);
-    mod_mult(tmp, tmp, V_2[1]);
+    if (stat) {
+        evaluate_beta(tmp, z, tmp_r, log_num);
+        mod_mult(tmp, tmp, V_2[0]);
+        mod_mult(tmp, tmp, V_2[1]);
+    }
 
-    if(mpz_cmp(tmp, rir))
+    if (mpz_cmp(tmp, rir)) {
         printf("Fail GKR Protocol: the last round %s %s\n",
             mpz_get_str(0, digit_rep, rir),
             mpz_get_str(0, digit_rep, tmp));
+	stat = 0;
+    }
 
-    mod_1neg(rir, r[0]);
-    mod_mult(rir, rir, V_2[0]);
-    mod_mult(tmp, r[0], V_2[1]);
-    mod_add(rir, rir, tmp);
+    if (stat) {
+        mod_1neg(rir, r[0]);
+        mod_mult(rir, rir, V_2[0]);
+        mod_mult(tmp, r[0], V_2[1]);
+        mod_add(rir, rir, tmp);
+    }
 
-    if(mpz_cmp(V2r, rir))
+    if (mpz_cmp(V2r, rir)) {
         printf("Fail: Input does not match: %s %s\n",
             mpz_get_str(0, digit_rep, V2r),
             mpz_get_str(0, digit_rep, rir));
+	stat = 0;
+    }
 
+    printf("Result: %d\n", stat);
     return stat;
 
 }
