@@ -100,14 +100,14 @@ void evaluate_tau2(mpz_t rop, const mpz_t val, const mpz_t *r, const int d)
     mpz_init(tmp);
     mpz_init_set_ui(one, 1);
 
-    mod_sub(rop, one, r[0]);
-    mod_sub(rop, rop, r[0]);
-    for(int i = 1; i < d; i ++) {
+    mod_sub(rop, one, r[d - 1]);
+    mod_sub(rop, rop, r[d - 1]);
+    for(int i = 0; i < d - 1; i ++) {
         mod_sub(tmp, base, one);
         mod_mult(tmp, tmp, r[i]);
         mod_add(tmp, tmp, one);
         mod_mult(rop, rop, tmp);
-        if(i < (d - 1))
+        if(i < (d - 2))
             mod_mult(base, base, base);
  
     }
@@ -152,8 +152,9 @@ void initialize_alpha(mpz_t *alpha, const int l, const int e)
 void initialize_tau2(mpz_t *tau, const int l, const mpz_t val)
 {
     mpz_set_ui(tau[0], 1);
-    mpz_set_si(tau[1 << (l - 1)], -1);
-    mod(tau[1 << (l - 1)], tau[1 << (l - 1)]);
+    mpz_sub_ui(tau[1 << (l - 1)], PRIME, 1);
+//    mpz_set_si(tau[1 << (l - 1)], -1);
+//    mod(tau[1 << (l - 1)], tau[1 << (l - 1)]);
 
     for(int i = 1; i < (1 << (l - 1)); i ++){
         mod_mult(tau[i], tau[i - 1], val);

@@ -34,7 +34,7 @@ void evaluate_V(mpz_t rop, const mpz_t *V_in, const int d, const mpz_t *r)
 }
 
 //void linear_evaluation(mpz_t *v, const int n, const uint64 num_terms, const int pivot, const mpz_t* V)
-void mlmap_evaluation_N(mpz_t *v, const int n, const uint64 num_terms, const int pivot, const mpz_t* V)
+void mlmap_evaluation_N(mpz_t *v, const int n, const uint64 num_terms, const uint64 pivot, const mpz_t* V)
 {
     mpz_t tmp1, tmp2;
     mpz_inits(tmp1, tmp2, NULL);
