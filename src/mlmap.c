@@ -33,7 +33,6 @@ void evaluate_V(mpz_t rop, const mpz_t *V_in, const int d, const mpz_t *r)
     free(V);
 }
 
-//void linear_evaluation(mpz_t *v, const int n, const uint64 num_terms, const int pivot, const mpz_t* V)
 void mlmap_evaluation_N(mpz_t *v, const int n, const uint64 num_terms, const uint64 pivot, const mpz_t* V)
 {
     mpz_t tmp1, tmp2;
@@ -50,7 +49,6 @@ void mlmap_evaluation_N(mpz_t *v, const int n, const uint64 num_terms, const uin
     mpz_clears(tmp1, tmp2, NULL);
 }
 
-//void kxi_eval(mpz_t* rop, const uint64 num_terms, const int d, const mpz_t* r) {
 void kxi_eval(mpz_t* rop, const uint64 num_terms, const mpz_t* r) {
 	mpz_t tmp;
 	mpz_init2(tmp, BITS);

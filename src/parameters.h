@@ -19,7 +19,6 @@ extern uint64 N;
 
 extern mpz_t *ROU;
 
-/* Init */
 int init_field(mp_bitcnt_t n, int logN_in);
 void free_field();
 

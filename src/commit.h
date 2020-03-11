@@ -1,13 +1,12 @@
-/*************************************
-//Jai Hyun Park
-//October 27, 2019.
-//Implementation of polynomial rounding circuit using commitments
-**************************************/
 #ifndef H_COMMIT
 #define H_COMMIT
-#include "vheaan.h"
-
-
+#include <time.h>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <gmp.h>
+#include "field.h"
+#include "parameters.h"
 
 void commit_keygen(mpz_t* pks, mpz_t* sks, const uint64 key_num);
 

@@ -3,7 +3,7 @@
 
 #include "parameters.h"
 #include "typedefs.h"
-#include "gmp.h"
+#include <gmp.h>
 
 void mod(mpz_t rop, const mpz_t x);
 void mod_set_ui(mpz_t rop, const uint64 x);

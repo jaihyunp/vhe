@@ -1,8 +1,4 @@
-#include "parameters.h"
-#include "field.h"
 #include "polynomial.h"
-#include <stdlib.h>
-#include <gmp.h>
 
 void _fft(mpz_t *buf, mpz_t *out, const uint64 n, const uint64 step)
 {

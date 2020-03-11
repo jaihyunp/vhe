@@ -1,9 +1,3 @@
-/*************************************
-//Jai Hyun Park
-//October 27, 2019.
-//Implementation of polynomial rounding circuit using commitments
-**************************************/
-
 #include "mlmap.h"
 
 void initialize_beta(mpz_t* betavals, const int d, const mpz_t* z)

@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS = -pthread -std=c++11 -O3 -g -Wall -Wextra
 INC = -Iinclude -Llib
-LIBS = -lgmp -lm
+LIBS = -lm -lntl -lgmp
 RM = rm -f
 
 DIR_OBJS=obj
@@ -9,19 +9,25 @@ DIR_SRCS=src
 DIR_BINS=bin
 
 VC_OBJS = \
+$(DIR_OBJS)/commit.o \
 $(DIR_OBJS)/field.o \
-$(DIR_OBJS)/polynomial.o \
-$(DIR_OBJS)/parameters.o \
-$(DIR_OBJS)/specialmaps.o \
 $(DIR_OBJS)/main.o \
+$(DIR_OBJS)/mlmap.o \
+$(DIR_OBJS)/parameters.o \
+$(DIR_OBJS)/polynomial.o \
+$(DIR_OBJS)/specialmaps.o \
+$(DIR_OBJS)/vc.o \
 
 
 VC_DEPS = \
+$(DIR_OBJS)/commit.d \
 $(DIR_OBJS)/field.d \
-$(DIR_OBJS)/polynomial.d \
-$(DIR_OBJS)/parameters.d \
-$(DIR_OBJS)/specialmaps.d \
 $(DIR_OBJS)/main.d \
+$(DIR_OBJS)/mlmap.d \
+$(DIR_OBJS)/parameters.d \
+$(DIR_OBJS)/polynomial.d \
+$(DIR_OBJS)/specialmaps.d \
+$(DIR_OBJS)/vc.d \
 
 VC_TARGET = $(DIR_BINS)/vc.exe
 
