@@ -103,6 +103,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
           *V_1 = (mpz_t *) malloc(sizeof(mpz_t) * num * N),
           *V_0 = (mpz_t *) malloc(sizeof(mpz_t) * num);
 
+    mod_ui_pow_ui(Q, 2, bits);
     for (int i = 0 ; i < num; i ++) {
         mpz_inits(V_2[i], V_0[i], 0);
         for (uint64 j = 0; j < N; j ++)
@@ -116,8 +117,10 @@ int main_RXoverPhi_mult(int argc, char **argv)
     for (int i = 0 ; i < num * 2; i ++) {
         mpz_init(V_3[i]);
         v_3[i] = (mpz_t *) malloc(sizeof(mpz_t) * N * 2);
-        for (uint64 j = 0; j < N; j ++)
-            mod_init_random(v_3[i][j]);
+        for (uint64 j = 0; j < N; j ++) {
+            mpz_init(v_3[i][j]);
+            mpz_urandomm(v_3[i][j], STATE, Q);
+        }
         for (uint64 j = N; j < N * 2; j ++)
             mpz_init_set_ui(v_3[i][j], 0);  // v_3 be the array of polynomials of degree N. (1)
     }
@@ -126,7 +129,6 @@ int main_RXoverPhi_mult(int argc, char **argv)
     for (int i = 0; i < num * (int) N * ubits * 4; i ++)
         mpz_init(C_0[i]);
     mod_ui_pow_ui(BITMAX, 2, 4 * ubits - 1);
-    mod_ui_pow_ui(Q, 2, bits);
     printf("..Memory allocated.\n");
 
 
@@ -219,19 +221,17 @@ int main_RXoverPhi_mult(int argc, char **argv)
         mpz_set(tmp_r[i + logN + log_bits + 2], r1[i + 1]);
     evaluate_V(COMMIT_R_0, C_0, log_num + logN + log_bits + 2, tmp_r);
 
-
     // Vf evaluates the MLE of input and output layers at the chosen point. (4-2)
     evaluate_V(V0z, V_0, log_num, z1);
     evaluate_V(V3r, V_3, log_num + 1, r1);
     printf("....Prover Precomputed.\n"); 
-
 
     // Pv generates the proof for the circuit. (4-3) 
     // Pv gives poly_V3_V2[][][], V_3[0], V_3[1], and C1r to Vf.
     initialize_beta(beta1, log_num, z1);
     initialize_beta(beta2, logN, z2);
     initialize_beta(beta3, log_bits + 2, z3);
-    initialize_alpha(alpha_4Q, log_bits + 2, bits * 4);
+    initialize_alpha(alpha_4Q, log_bits + 2, ubits * 4);
     initialize_alpha(alpha_1Q, log_bits + 2, bits);
     initialize_tau(tau_2N, logN + 1, val);
     initialize_tau(tau_N, logN, val);
@@ -317,8 +317,10 @@ int main_RXoverPhi_mult(int argc, char **argv)
     mlmap_evaluation_N(b1, 4, num_terms, 0, beta1);
 
     // log_num th round.
-    for (int i = 0; i < 4; i ++)
-        mod_set_ui(sign[i], 1 - 2 * i);
+    for (int i = 0; i < 4; i ++) {
+        mpz_set_si(sign[i], 1 - 2 * i);
+        mod(sign[i], sign[i]);
+    }
     num_terms = 1ULL << (logN + 1);
     for (uint64 q = 0; q < num_terms / 2; q ++) {
         mlmap_evaluation_N(c1, 4, num_terms, q, C_1);
@@ -402,6 +404,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     mlmap_evaluation_N(t, 4, num_terms, 0, tau_N);
     mlmap_evaluation_N(c1, 4, num_terms, 0, C_1);
 
+    // last layers.
     num_terms = 1ULL << (log_bits + 2);
     for (int round = 0; round < log_bits + 2; round ++) {
         for (uint64 e = 0; e < num_terms / 2; e ++) {
@@ -461,7 +464,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
         mod_mult(tmp, tmp, b2r);
         mod_mult(tmp, tmp, b3r);
         if (mpz_cmp(rir, tmp)) {
-            printf("GKR V1->bits Fail: One point reduction: %s %s.\n",
+            printf("GKR C0->bits Fail: One point reduction: %s %s.\n",
                 mpz_get_str(0, digit_rep, rir),
                 mpz_get_str(0, digit_rep, tmp));
             stat = 0;
@@ -479,7 +482,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     stat = stat ? sum_check_verification(rir, poly_C0_V0, V0z, 4, log_num + logN + log_bits + 2, tmp_r, "GKR V0->C0") : 0;
     if (stat) {
         evaluate_alpha(a1qr, bits, r3, log_bits + 2);
-        evaluate_alpha(a4qr, 4 * bits, r3, log_bits + 2);
+        evaluate_alpha(a4qr, 4 * ubits, r3, log_bits + 2);
         evaluate_tau(tr, val, r2, logN);
         evaluate_tau(t2r, val, r2, logN + 1);
         mod_mult(tmp, b1r, tr);
@@ -515,7 +518,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
         mpz_set(tmp_r[i], r2[i]);
     for (int i = 0; i < log_num; i ++)
         mpz_set(tmp_r[i + logN + 1], r1[i + 1]);
-    mod_add(V1z, poly_C1_V1[0][0], poly_C1_V1[0][1]);
+    mod_sub(V1z, V1z, BITMAX);
     stat = stat ? sum_check_verification(rir, poly_C1_V1, V1z, 4, log_num + logN + 1, tmp_r, "GKR V1->C1") : 0;
     if (stat) {
         mod_mult(tmp, b1r, b2r);
@@ -567,7 +570,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
         mod_mult(rir, rir, V_3[0]);
         mod_mult(tmp, r1[0], V_3[1]);
         mod_add(rir, rir, tmp); // rir = (1-r0)V3(R0)+r0V3(R1) (= V3(Rr))
-        printf("..GKR all verified. Returns C0r (%s), C1r (%s) and rir (%s).\n",
+        printf("..GKR all verified.\n..Returns polys, C0r (%s), C1r (%s) and rir (%s).\n",
                 mpz_get_str(0, digit_rep, C0r),
                 mpz_get_str(0, digit_rep, C1r),
                 mpz_get_str(0, digit_rep, rir));
@@ -609,11 +612,10 @@ int main_RXoverPhi_mult(int argc, char **argv)
         printf("....Consistent with the original input.\n");
     }
 
-    if (stat) {
+    if (stat)
         printf("..Consistency verified.\n");
-    }
- 
-    printf("Result: %d\n", stat);
+
+    printf("Result: %s\n", stat ? "PASS" : "FAIL");
     return stat;
 }
 
