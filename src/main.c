@@ -131,6 +131,11 @@ int main_RXoverPhi_mult(int argc, char **argv)
     mod_ui_pow_ui(BITMAX, 2, 4 * ubits - 1);
     printf("..Memory allocated.\n");
 
+    // Vf generatese the commit keys (1-1)
+    //////////
+    // TODO //
+    ////////// Commit
+
 
     // Pv evaluates the circuit and commit the required values. (2)
     // Pv evaluates the circuit over polynomial rings. (2-1)
@@ -154,8 +159,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
             mpz_mod(v_0[i][j], v_1[i][j], Q);
         }
     }
-    //Commit (2-2)
-
+    // Pv commits the values (2-2).
     //////////
     // TODO //
     ////////// Commit
@@ -580,10 +584,10 @@ int main_RXoverPhi_mult(int argc, char **argv)
 
     // Vf checks the consistencies: rir and V3r / C1r, C0r and commit (5)
     // Vf checks whether C*r are consistent with the commits. (5-1)
-
+    // Open commit
     //////////
     // TODO //
-    //////////
+    ////////// Commit
     if(mpz_cmp(COMMIT_R_0, C0r)) {
         printf("Commit Fail: Inconsistent with the committed value: %s %s\n", 
                 mpz_get_str(0, digit_rep, C0r),
@@ -694,6 +698,11 @@ int main_FXoverPhi_mult(int argc, char **argv)
 
     printf("..Memory allocated.\n");
 
+    // Vf commitkey gen (1-1)
+    //////////
+    // TODO //
+    ////////// Commit
+
 
     // Pv evaluates the circuit and commit the required values. (2)
     // Pv evaluates the circuit over polynomial rings. (2-1)
@@ -708,11 +717,11 @@ int main_FXoverPhi_mult(int argc, char **argv)
         for (uint64 j = 0; j < N; j ++)
             mod_sub(v_1[i][j], v_2[i][j], v_2[i][j + N]);
     }
-    //Commit (2-2)
 
+    // Pv commits the values (2-2)
     //////////
     // TODO //
-    //////////
+    ////////// Commit
 
     printf("..Circuit evaluated.\n"); 
 
@@ -892,11 +901,12 @@ int main_FXoverPhi_mult(int argc, char **argv)
 
 
     // Vf checks the consistencies: rir and V3r / C1r and commit (5)
-    // Vf checks whether C1r is consistent with the commit. (5-1)
 
+    // Vf checks whether C1r is consistent with the commit. (5-1)
+    // Open commit
     //////////
     // TODO //
-    //////////
+    ////////// Commit
     if(mpz_cmp(COMMIT_R, C1r)) {
         printf("Commit Fail: Inconsistent with the committed value: %s %s\n", 
                 mpz_get_str(0, digit_rep, C1r),

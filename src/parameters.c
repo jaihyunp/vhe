@@ -68,8 +68,8 @@ int init_field(mp_bitcnt_t n, int logN_in)
 
     BITS = n + 1;
 
-    gmp_randinit_mt(STATE);
-//    gmp_randseed_ui(STATE, time(NULL));
+//    gmp_randinit_mt(STATE);
+    gmp_randseed_ui(STATE, time(NULL));
     gmp_randseed_ui(STATE, 0);
 
     printf("====================================================\n");
