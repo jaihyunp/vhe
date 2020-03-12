@@ -4,6 +4,9 @@
 #include <gmp.h>
 #include "typedefs.h"
 #include "field.h"
+#include <time.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 extern mpz_t PRIME;
 extern mpz_t GSIZE;

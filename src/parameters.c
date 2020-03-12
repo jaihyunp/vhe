@@ -1,8 +1,4 @@
 #include "parameters.h"
-#include "field.h"
-#include <gmp.h>
-#include <time.h>
-#include <stdlib.h>
 
 mpz_t PRIME;
 mpz_t GSIZE;
