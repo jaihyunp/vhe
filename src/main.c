@@ -632,9 +632,9 @@ int main_FXoverPhi_mult(int argc, char **argv)
         return 0;
     }
     long bits_of_prime = atol(argv[1]);
-    int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), num = 1 << log_num, stat = 1;
-    uint64 CKnum = 1 << atoi(argv[4]);							// number of commit keys
-    uint64 CMnum = 1 << (log_num + logN_in + 1 - atoi(argv[4]));		// number of commits
+    int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), log_ck = atoi(argv[4]), num = 1 << log_num, stat = 1;
+    uint64 CKnum = 1 << log_ck;							// number of commit keys
+    uint64 CMnum = 1 << (log_num + logN_in + 1 - log_ck);		// number of commits
     init_field(bits_of_prime, logN_in); //init field
 
 
@@ -644,13 +644,19 @@ int main_FXoverPhi_mult(int argc, char **argv)
 			*CK_out = (mpz_t *) malloc(sizeof(mpz_t) * CKnum),
 			*CK_in = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N * num),
 			*tmp_Cr = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1 + logN)),
-			*commits = (mpz_t *) malloc(sizeof(mpz_t) * CMnum);
+			*tmp_rCr = (mpz_t *) malloc(sizeof(mpz_t) * log_ck),
+			*commits = (mpz_t *) malloc(sizeof(mpz_t) * CMnum),
+			*Cr_evalpts = (mpz_t *) malloc(sizeof(mpz_t) * CMnum);
     for (uint64 i = 0; i < CKnum; i++)
     		mpz_inits(sks[i], pks[i], CK_out[i], 0);
     for (uint64 i = 0; i < 2 * N * num; i++)
     		mpz_init(CK_in[i]);
+    for (uint64 i = 0; i < log_num + 1 + logN; i++)
+        	mpz_init(tmp_Cr[i]);
+    for (int i = 0; i < log_ck; i++)
+            	mpz_init(tmp_rCr[i]);
     for (uint64 i = 0; i < CMnum; i++)
-        	mpz_init(commits[i]);
+        	mpz_inits(commits[i], Cr_evalpts[i], 0);
 
 
     mpz_t val, V1z, V2z, V3r, C1r, tmp, rir, br, tr, t2r, COMMIT_R;
@@ -684,9 +690,11 @@ int main_FXoverPhi_mult(int argc, char **argv)
             mpz_init_set_ui(poly_C1_V2[i][j], 0);
         }
     }
+
     mpz_t b[4], v30[4], v31[4], c[4], t[4], t2[4];
     for (int i = 0; i < 4; i ++)
         mpz_inits(b[i], v30[i], v31[i], c[i], t[i], t2[i], 0);
+
 
     mpz_t **v_3 = (mpz_t **) malloc(sizeof(mpz_t *) * num * 2),
           **v_2 = (mpz_t **) malloc(sizeof(mpz_t *) * num),
@@ -776,10 +784,20 @@ int main_FXoverPhi_mult(int argc, char **argv)
     ////////// Commit
     ////////// save random point for commited value evaluation.
     for (int i = 0; i < (int) logN + 1; i ++)
-        mpz_set(tmp_Cr[i], r[i]);
+    		mpz_set(tmp_r[i], r[i]);
+        //mpz_set(tmp_Cr[logN + log_num - i], r[i]);
     for (int i = 0; i < log_num; i ++)
-        mpz_set(tmp_Cr[i + logN + 1], r[i + 1 + logN + 1]);
-    // evaluate_V(COMMIT_R, C_1, log_num + logN + 1, tmp_r);
+    		mpz_set(tmp_r[i + logN + 1], r[i + 1 + logN + 1]);
+        //mpz_set(tmp_Cr[log_num - i - 1], r[i + 1 + logN + 1]);
+    evaluate_V(COMMIT_R, C_1, log_num + logN + 1, tmp_r);
+    printf("COMMIT_R: %s \n", mpz_get_str(0, digit_rep, COMMIT_R));
+
+    for (int i = 0; i < log_num + 1 + (int) logN; i ++)
+    		mpz_set(tmp_Cr[i], tmp_r[log_num + logN - i]);			// tmp_Cr => reverse order
+
+	for (int i = 0; i < log_ck; ++i)
+		mpz_set(tmp_rCr[i], tmp_r[log_num + logN - log_ck + i]);
+
 
 
     // Vf evaluates the MLE of input and output layers at the chosen point. (4-2)
@@ -924,9 +942,13 @@ int main_FXoverPhi_mult(int argc, char **argv)
     // Vf checks the consistencies: rir and V3r / C1r and commit (5)
 
     // Vf checks whether C1r is consistent with the commit. (5-1)
+
+    kxi_eval(Cr_evalpts, CMnum, &(tmp_Cr[log_ck]));
+
     // Open commit
-    commit_open(CK_out, CK_in, &(tmp_Cr[atoi(argv[4])]), commits, CKnum, CMnum, 0, sks);
-    evaluate_V(COMMIT_R, CK_out, atoi(argv[4]), tmp_Cr);
+    commit_open(CK_out, CK_in, Cr_evalpts, commits, CKnum, CMnum, 0, sks);
+
+	evaluate_V(COMMIT_R, CK_out, log_ck, tmp_rCr);
     ////////// Commit
 
 

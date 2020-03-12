@@ -22,5 +22,7 @@ void evaluate_tau(mpz_t rop, const mpz_t val, const mpz_t *r, const int d);
 void initialize_tau2(mpz_t *tau, const int l, const mpz_t val);
 void evaluate_tau2(mpz_t rop, const mpz_t val, const mpz_t *r, const int d);
 
+void kxi_eval(mpz_t* rop, const uint64 num_terms, const mpz_t* r);
+
 #endif
 
