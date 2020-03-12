@@ -13,8 +13,8 @@ int main_RXoverPhi_mult(int argc, char **argv);
 int main(int argc, char **argv)
 {
 //    return main_FX_mult(argc, argv);
-//    return main_FXoverPhi_mult(argc, argv);
-    return main_RXoverPhi_mult(argc, argv);
+    return main_FXoverPhi_mult(argc, argv);
+//    return main_RXoverPhi_mult(argc, argv);
 }
 
 
@@ -627,13 +627,31 @@ int main_RXoverPhi_mult(int argc, char **argv)
 //Implementation of Verifiable Multiplication over Z_p[X]/(X^N + 1), where p is prime and N is power of two.
 int main_FXoverPhi_mult(int argc, char **argv)
 {
-    if(argc != 4) {
-        printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num].\n");
+    if(argc != 5) {
+        printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num] [logCKnum].\n");
         return 0;
     }
     long bits_of_prime = atol(argv[1]);
     int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), num = 1 << log_num, stat = 1;
+    uint64 CKnum = 1 << atoi(argv[4]);							// number of commit keys
+    uint64 CMnum = 1 << (log_num + logN_in + 1 - atoi(argv[4]));		// number of commits
     init_field(bits_of_prime, logN_in); //init field
+
+
+    //// variables for commit
+    mpz_t *sks = (mpz_t *) malloc(sizeof(mpz_t) * CKnum),
+    			*pks = (mpz_t *) malloc(sizeof(mpz_t) * CKnum),
+			*CK_out = (mpz_t *) malloc(sizeof(mpz_t) * CKnum),
+			*CK_in = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N * num),
+			*tmp_Cr = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1 + logN)),
+			*commits = (mpz_t *) malloc(sizeof(mpz_t) * CMnum);
+    for (uint64 i = 0; i < CKnum; i++)
+    		mpz_inits(sks[i], pks[i], CK_out[i], 0);
+    for (uint64 i = 0; i < 2 * N * num; i++)
+    		mpz_init(CK_in[i]);
+    for (uint64 i = 0; i < CMnum; i++)
+        	mpz_init(commits[i]);
+
 
     mpz_t val, V1z, V2z, V3r, C1r, tmp, rir, br, tr, t2r, COMMIT_R;
     mpz_inits(val, V1z, V2z, V3r, C1r, tmp, rir, br, tr, t2r, COMMIT_R, 0);
@@ -698,10 +716,9 @@ int main_FXoverPhi_mult(int argc, char **argv)
 
     printf("..Memory allocated.\n");
 
-    // Vf commitkey gen (1-1)
-    //////////
-    // TODO //
-    ////////// Commit
+    ////////// Vf commitkey gen (1-1)
+    commit_keygen(pks, sks, CKnum);
+	printf("KeyGen (Commit) \n");
 
 
     // Pv evaluates the circuit and commit the required values. (2)
@@ -718,10 +735,13 @@ int main_FXoverPhi_mult(int argc, char **argv)
             mod_sub(v_1[i][j], v_2[i][j], v_2[i][j + N]);
     }
 
-    // Pv commits the values (2-2)
-    //////////
-    // TODO //
-    ////////// Commit
+    ////////// Pv commits the values (2-2)
+    for (int i = 0; i < num; i ++)
+    		for (uint64 j = 0; j < 2 * N; j ++)
+    		    mpz_set(CK_in[i * 2 * N + j], v_2[i][j]);
+
+    commit_commit(commits, CK_in, CKnum, CMnum, 0, pks);
+    printf("Prover commits \n");
 
     printf("..Circuit evaluated.\n"); 
 
@@ -752,14 +772,15 @@ int main_FXoverPhi_mult(int argc, char **argv)
     }
     printf("....Randomness fixed.\n"); 
 
-    //////////
-    // TODO //
-    //////////
+
+    ////////// Commit
+    ////////// save random point for commited value evaluation.
     for (int i = 0; i < (int) logN + 1; i ++)
-        mpz_set(tmp_r[i], r[i]);
+        mpz_set(tmp_Cr[i], r[i]);
     for (int i = 0; i < log_num; i ++)
-        mpz_set(tmp_r[i + logN + 1], r[i + 1 + logN + 1]);
-    evaluate_V(COMMIT_R, C_1, log_num + logN + 1, tmp_r);
+        mpz_set(tmp_Cr[i + logN + 1], r[i + 1 + logN + 1]);
+    // evaluate_V(COMMIT_R, C_1, log_num + logN + 1, tmp_r);
+
 
     // Vf evaluates the MLE of input and output layers at the chosen point. (4-2)
     evaluate_V(V1z, V_1, log_num, z);
@@ -904,9 +925,11 @@ int main_FXoverPhi_mult(int argc, char **argv)
 
     // Vf checks whether C1r is consistent with the commit. (5-1)
     // Open commit
-    //////////
-    // TODO //
+    commit_open(CK_out, CK_in, &(tmp_Cr[atoi(argv[4])]), commits, CKnum, CMnum, 0, sks);
+    evaluate_V(COMMIT_R, CK_out, atoi(argv[4]), tmp_Cr);
     ////////// Commit
+
+
     if(mpz_cmp(COMMIT_R, C1r)) {
         printf("Commit Fail: Inconsistent with the committed value: %s %s\n", 
                 mpz_get_str(0, digit_rep, C1r),
