@@ -33,9 +33,7 @@ void commit_commit(mpz_t* commits, const mpz_t* input, const uint64 key_num, con
 }
 
 
-// Given 'evalpt', vector 'output' of size 'key_num' 
-// which is a matrixt-vector mult of BD matrix 'input' of size 'key_num' by 'input_row_num' 
-// with vector 'evalpt' of size 'input_row_num'*2**'log_bit_size' 
+// Given 'evalpt', vector 'output' of size 'key_num'
 // Vf checks if 'commits' dots 'evalpt' equals 'sks' dots 'output'
 void commit_open(mpz_t* output, const mpz_t* input, const mpz_t* evalpts, const mpz_t* commits, const uint64 key_num, const uint64 input_row_num, const mpz_t* sks) {
 

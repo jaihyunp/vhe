@@ -13,23 +13,72 @@ int main_RXoverPhi_mult(int argc, char **argv);
 int main(int argc, char **argv)
 {
 //    return main_FX_mult(argc, argv);
-    return main_FXoverPhi_mult(argc, argv);
-//    return main_RXoverPhi_mult(argc, argv);
+//    return main_FXoverPhi_mult(argc, argv);
+    return main_RXoverPhi_mult(argc, argv);
 }
 
 
 int main_RXoverPhi_mult(int argc, char **argv)
 {
-    if(argc != 5) {
-        printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num] [bits].\n");
+    if(argc != 7) {
+        printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num] [bits] [log_ck0_bits] [log_ck1].\n");
         return 0;
     }
     long bits_of_prime = atol(argv[1]);
-    int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), num = 1 << log_num, stat = 1, log_bits = 0, bits = atoi(argv[4]), ubits;
+    int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), num = 1 << log_num, stat = 1,
+    		log_bits = 0, bits = atoi(argv[4]), log_ck0 = atoi(argv[5]), log_ck1 = atoi(argv[6]), ubits;
     while ((bits - 1) >> ++ log_bits);
     ubits = 1 << log_bits;
 
+    uint64 CK0num = 1 << log_ck0;											// number of commit keys0
+    uint64 CM0num = 1 << (log_num + logN_in + 2 + log_bits - log_ck0);		// number of commits0
+    uint64 CK1num = 1 << log_ck1;											// number of commit keys1
+    uint64 CM1num = 1 << (log_num + logN_in + 1 - log_ck1);					// number of commits1
+
+
     init_field(bits_of_prime, logN_in); //init field
+
+    //// variables for commit0
+    mpz_t *sks0 = (mpz_t *) malloc(sizeof(mpz_t) * CK0num),
+    			*pks0 = (mpz_t *) malloc(sizeof(mpz_t) * CK0num),
+			*CK0_out = (mpz_t *) malloc(sizeof(mpz_t) * CK0num),
+			*CK0_in = (mpz_t *) malloc(sizeof(mpz_t) * 4 * N * num * ubits),
+			*tmp_C0r = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 2 + logN + log_bits)),
+			*tmp_rC0r = (mpz_t *) malloc(sizeof(mpz_t) * log_ck0),
+			*commits0 = (mpz_t *) malloc(sizeof(mpz_t) * CM0num),
+			*C0r_evalpts = (mpz_t *) malloc(sizeof(mpz_t) * CM0num);
+    for (uint64 i = 0; i < CK0num; i++)
+    		mpz_inits(sks0[i], pks0[i], CK0_out[i], 0);
+    for (uint64 i = 0; i < 4 * N * num * ubits; i++)
+    		mpz_init(CK0_in[i]);
+    for (uint64 i = 0; i < log_num + 2 + logN + log_bits; i++)
+        	mpz_init(tmp_C0r[i]);
+    for (int i = 0; i < log_ck0; i++)
+            	mpz_init(tmp_rC0r[i]);
+    for (uint64 i = 0; i < CM0num; i++)
+        	mpz_inits(commits0[i], C0r_evalpts[i], 0);
+
+    //// variables for commit1
+    mpz_t *sks1 = (mpz_t *) malloc(sizeof(mpz_t) * CK1num),
+    			*pks1 = (mpz_t *) malloc(sizeof(mpz_t) * CK1num),
+			*CK1_out = (mpz_t *) malloc(sizeof(mpz_t) * CK1num),
+			*CK1_in = (mpz_t *) malloc(sizeof(mpz_t) * 2 * N * num),
+			*tmp_C1r = (mpz_t *) malloc(sizeof(mpz_t) * (log_num + 1 + logN)),
+			*tmp_rC1r = (mpz_t *) malloc(sizeof(mpz_t) * log_ck1),
+			*commits1 = (mpz_t *) malloc(sizeof(mpz_t) * CM1num),
+			*C1r_evalpts = (mpz_t *) malloc(sizeof(mpz_t) * CM1num);
+    for (uint64 i = 0; i < CK1num; i++)
+    		mpz_inits(sks1[i], pks1[i], CK1_out[i], 0);
+    for (uint64 i = 0; i < 2 * N * num; i++)
+    		mpz_init(CK1_in[i]);
+    for (uint64 i = 0; i < log_num + 1 + logN; i++)
+        	mpz_init(tmp_C1r[i]);
+    for (int i = 0; i < log_ck1; i++)
+            	mpz_init(tmp_rC1r[i]);
+    for (uint64 i = 0; i < CM1num; i++)
+        	mpz_inits(commits1[i], C1r_evalpts[i], 0);
+
+
 
     mpz_t val, V0z, V1z, V2z, V3r, C1r, C0r, tmp, rir, b1r, b2r, b3r, tr, t2r, a1qr, a4qr, COMMIT_R_1, COMMIT_R_0, BITMAX, Q, SIGN;
     mpz_inits(val, V0z, V1z, V2z, V3r, C1r, C0r, tmp, rir, b1r, b2r, b3r, tr, t2r, a1qr, a4qr, COMMIT_R_1, COMMIT_R_0, BITMAX, Q, SIGN, 0);
@@ -131,10 +180,10 @@ int main_RXoverPhi_mult(int argc, char **argv)
     mod_ui_pow_ui(BITMAX, 2, 4 * ubits - 1);
     printf("..Memory allocated.\n");
 
-    // Vf generatese the commit keys (1-1)
-    //////////
-    // TODO //
-    ////////// Commit
+    // Vf generates the commit keys (1-1)
+    commit_keygen(pks0, sks0, CK0num);
+    commit_keygen(pks1, sks1, CK1num);
+    	printf("KeyGen (Commit) \n");
 
 
     // Pv evaluates the circuit and commit the required values. (2)
@@ -159,15 +208,31 @@ int main_RXoverPhi_mult(int argc, char **argv)
             mpz_mod(v_0[i][j], v_1[i][j], Q);
         }
     }
+
+
     // Pv commits the values (2-2).
-    //////////
-    // TODO //
+
+    for (int i = 0; i < num; i ++)
+    		for (uint64 j = 0; j < N; j ++)
+    			for (int k = 0; k < ubits * 4; k ++)
+    				mpz_set(CK0_in[(i * N + j) * ubits * 4 + k], C_0[(i * N + j) * ubits * 4 + k]);
+
+    commit_commit_binary(commits0, CK0_in, CK0num, CM0num, pks0);
+    printf("Prover commits0 \n");
+
+    for (int i = 0; i < num; i ++)
+    		for (uint64 j = 0; j < 2 * N; j ++)
+    		    mpz_set(CK1_in[i * 2 * N + j], C_1[i * 2 * N + j]);
+
+    commit_commit(commits1, CK1_in, CK1num, CM1num, pks1);
+    printf("Prover commits1 \n");
+
     ////////// Commit
 
-    printf("..Circuit evaluated.\n"); 
+    printf("..Circuit evaluated.\n");
 
 
-    
+
     // Vf takes a random point val from our finite field, and Pv construct a reduced MLE circuit with val. (3)
     // Vf also should do the same procedure but only on the input and output layer.
     mod_random(val);
@@ -180,7 +245,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
         coeff_evaluate(V_2[i], val, v_2[i], 2 * N); // Pv
     for (int i = 0; i < num * 2; i ++)
         coeff_evaluate(V_3[i], val, v_3[i], N); // Both Pv and Vf
-    printf("..MLE constructed.\n"); 
+    printf("..MLE constructed.\n");
 
 
     // GKR Protocol (4)
@@ -206,16 +271,21 @@ int main_RXoverPhi_mult(int argc, char **argv)
     }
     for (int i = 0; i < log_num + 1 + (int) logN + 1 + log_bits + 2; i ++)
         mpz_init(tmp_r[i]);
-    printf("....Randomness fixed.\n"); 
+    printf("....Randomness fixed.\n");
 
-    //////////
-    // TODO //
-    ////////// Commit
+
     for (int i = 0; i < (int) logN + 1; i ++)
         mpz_set(tmp_r[i], r2[i]);
     for (int i = 0; i < log_num; i ++)
         mpz_set(tmp_r[i + logN + 1], r1[i + 1]);
-    evaluate_V(COMMIT_R_1, C_1, log_num + logN + 1, tmp_r);
+
+    ////////// Commit1
+    ////////// save random point for commited value evaluation.
+    for (int i = 0; i < (int) logN + 1 + log_num; ++i)
+        mpz_set(tmp_C1r[i], tmp_r[logN + log_num - i]);				// tmp_Cr => reverse order
+	for (int i = 0; i < log_ck1; ++i)
+		mpz_set(tmp_rC1r[i], tmp_C1r[log_ck1 - 1 - i]);  				// tmp_rCr => order
+
 
     for (int i = 0; i < log_bits + 2; i ++)
         mpz_set(tmp_r[i], r3[i]);
@@ -223,14 +293,28 @@ int main_RXoverPhi_mult(int argc, char **argv)
         mpz_set(tmp_r[i + log_bits + 2], r2[i]);
     for (int i = 0; i < log_num; i ++)
         mpz_set(tmp_r[i + logN + log_bits + 2], r1[i + 1]);
-    evaluate_V(COMMIT_R_0, C_0, log_num + logN + log_bits + 2, tmp_r);
+//    evaluate_V(COMMIT_R_0, C_0, log_num + logN + log_bits + 2, tmp_r);
+
+
+    ////////// Commit0
+    ////////// save random point for commited value evaluation.
+    for (int i = 0; i < (int) logN + 2 + log_bits + log_num; ++i)
+        mpz_set(tmp_C0r[i], tmp_r[logN + 1 + log_bits + log_num - i]);			// tmp_Cr => reverse order
+
+	for (int i = 0; i < log_ck0; ++i)
+		mpz_set(tmp_rC0r[i], tmp_C0r[log_ck0 - 1 - i]);  				// tmp_rCr => order
+
+	////////// Commit done
+
+
+
 
     // Vf evaluates the MLE of input and output layers at the chosen point. (4-2)
     evaluate_V(V0z, V_0, log_num, z1);
     evaluate_V(V3r, V_3, log_num + 1, r1);
-    printf("....Prover Precomputed.\n"); 
+    printf("....Prover Precomputed.\n");
 
-    // Pv generates the proof for the circuit. (4-3) 
+    // Pv generates the proof for the circuit. (4-3)
     // Pv gives poly_V3_V2[][][], V_3[0], V_3[1], and C1r to Vf.
     initialize_beta(beta1, log_num, z1);
     initialize_beta(beta2, logN, z2);
@@ -239,7 +323,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     initialize_alpha(alpha_1Q, log_bits + 2, bits);
     initialize_tau(tau_2N, logN + 1, val);
     initialize_tau(tau_N, logN, val);
-    
+
     // 0 ~ log_num-1 th round.
     uint64 num_terms = 1ULL << log_num;
     for (int round = 0; round < log_num; round ++) {
@@ -263,11 +347,11 @@ int main_RXoverPhi_mult(int argc, char **argv)
                     mod_mult(tmp, tmp, t2[i]);
                     mod_add(poly_C1_V2[round][i], poly_C1_V2[round][i], tmp);
                 }
-                
+
                 if (q < N) {
                     mlmap_evaluation_N(t, 4, 0, q, tau_N);
                     mlmap_evaluation_N(b2, 4, 0, q, beta2);
-                    
+
                     for (int i = 0; i < 4; i ++) {
                         mod_mult(tmp, b1[i], b2[i]);
                         mod_mult(tmp, tmp, c1[i]);
@@ -363,7 +447,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
                 mod_mult(tmp, b1[i], c1[i]);
                 mod_mult(tmp, tmp, t2[i]);
                 mod_add(poly_C1_V2[round + log_num + 1][i], poly_C1_V2[round + log_num + 1][i], tmp);
-                
+
                 mod_mult(tmp, sign[i], c1[i]);
                 mod_mult(tmp, tmp, b1[i]);
                 mod_mult(tmp, tmp, b2[i]);
@@ -584,28 +668,40 @@ int main_RXoverPhi_mult(int argc, char **argv)
 
     // Vf checks the consistencies: rir and V3r / C1r, C0r and commit (5)
     // Vf checks whether C*r are consistent with the commits. (5-1)
+
+    // Vf checks whether C1r is consistent with the commit. (5-1)
+
+    kxi_eval(C0r_evalpts, CM0num, &(tmp_C0r[log_ck0]));
+    kxi_eval(C1r_evalpts, CM1num, &(tmp_C1r[log_ck1]));
+
     // Open commit
-    //////////
-    // TODO //
+    commit_open_binary(CK0_out, CK0_in, C0r_evalpts, commits0, CK0num, CM0num, sks0);
+    printf("Opening Commit0 done!\n");
+    commit_open(CK1_out, CK1_in, C1r_evalpts, commits1, CK1num, CM1num, sks1);
+
+	evaluate_V(COMMIT_R_0, CK0_out, log_ck0, tmp_rC0r);
+	evaluate_V(COMMIT_R_1, CK1_out, log_ck1, tmp_rC1r);
     ////////// Commit
+
+
     if(mpz_cmp(COMMIT_R_0, C0r)) {
-        printf("Commit Fail: Inconsistent with the committed value: %s %s\n", 
+        printf("Commit Fail: Inconsistent with the committed 0 value: %s %s\n",
                 mpz_get_str(0, digit_rep, C0r),
                 mpz_get_str(0, digit_rep, COMMIT_R_0));
         stat = 0;
     } else {
-        printf("....Consistent with the committed value.\n");
+        printf("....Consistent with the committed 0 value.\n");
     }
     if(mpz_cmp(COMMIT_R_1, C1r)) {
-        printf("Commit Fail: Inconsistent with the committed value: %s %s\n", 
+        printf("Commit Fail: Inconsistent with the committed 1 value: %s %s\n",
                 mpz_get_str(0, digit_rep, C1r),
                 mpz_get_str(0, digit_rep, COMMIT_R_1));
         stat = 0;
     } else {
-        printf("....Consistent with the committed value.\n");
+        printf("....Consistent with the committed 1 value.\n");
     }
 
-    
+
     // Vf checks whether rir is consistent with the precomputed V3r. (5-2).
     if (mpz_cmp(V3r, rir)) {
         printf("GKR Fail: Inconsistent with the input: %s %s.\n",
