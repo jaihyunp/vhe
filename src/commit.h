@@ -1,7 +1,6 @@
 #ifndef H_COMMIT
 #define H_COMMIT
 #include <time.h>
-#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <gmp.h>
@@ -19,6 +18,6 @@ void commit_commit_binary(mpz_t* commits, const mpz_t* input, const uint64 key_n
 void commit_open_binary(mpz_t* output, const mpz_t* input, const mpz_t* evalpts, const mpz_t* commits, const uint64 key_num, const uint64 input_num, const mpz_t* sks);
 
 
-void commit_test();
+//void commit_test();
 
 #endif

@@ -54,7 +54,7 @@ void commit_open(mpz_t* output, const mpz_t* input, const mpz_t* evalpts, const 
 	}
 
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
-	std::cout << "Prover time is: " << elapsed_time << " ms" << std::endl;
+    printf("Prover time is: %f ms\n", elapsed_time);
     TIME_PROVER += elapsed_time;
 
 	st = clock();
@@ -77,12 +77,12 @@ void commit_open(mpz_t* output, const mpz_t* input, const mpz_t* evalpts, const 
 	mpz_powm(tmp, GGEN, test2, GSIZE);
 
 	if (mpz_cmp(test, tmp) == 0)
-		std::cout << "Correct commit!" << std::endl;
+        printf("Correct commit!\n");
 	else
-		std::cout << "Wrong commit!" << std::endl;
+        printf("Wrong commit!\n");
 
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
-	std::cout << "Verifier time is: " << elapsed_time << " ms" << std::endl;
+    printf("Verifier time is: %f ms\n", elapsed_time);
     TIME_VERIFIER += elapsed_time;
 
 }
@@ -136,7 +136,7 @@ void commit_open_binary(mpz_t* output, const mpz_t* input, const mpz_t* evalpts,
 	}
 
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
-	std::cout << "Prover time is: " << elapsed_time << " ms" << std::endl;
+    printf("Prover time is: %f ms\n", elapsed_time);
     TIME_PROVER += elapsed_time;
 
 	st = clock();
@@ -161,17 +161,18 @@ void commit_open_binary(mpz_t* output, const mpz_t* input, const mpz_t* evalpts,
 
 		
 	if (mpz_cmp(test, tmp) == 0)
-		std::cout << "Correct commit!" << std::endl;
+	    printf("Correct commit!\n");
 	else
-		std::cout << "Wrong commit!" << std::endl;
+	    printf("Wrong commit!\n");
 
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
-	std::cout << "Verifier time is: " << elapsed_time << " ms" << std::endl;
+    printf("Verifier time is: %f ms\n", elapsed_time);
     TIME_VERIFIER += elapsed_time;
 
 }
 
 
+/*
 void commit_test() {
 
 	clock_t test_st;
@@ -219,3 +220,4 @@ void commit_test() {
 
 
 }
+*/
