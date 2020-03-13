@@ -12,8 +12,8 @@ int main_RXoverPhi_mult(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
-//    return main_FX_mult(argc, argv);
-    return main_FXoverPhi_mult(argc, argv);
+    return main_FX_mult(argc, argv);
+//    return main_FXoverPhi_mult(argc, argv);
 //    return main_RXoverPhi_mult(argc, argv);
 }
 
@@ -631,10 +631,12 @@ int main_FXoverPhi_mult(int argc, char **argv)
         printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num] [logCKnum].\n");
         return 0;
     }
+    clock_t st;
+    double elapsed_time;
     long bits_of_prime = atol(argv[1]);
     int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), log_ck = atoi(argv[4]), num = 1 << log_num, stat = 1;
-    uint64 CKnum = 1 << log_ck;							// number of commit keys
-    uint64 CMnum = 1 << (log_num + logN_in + 1 - log_ck);		// number of commits
+    uint64 CKnum = 1ULL << log_ck;							// number of commit keys
+    uint64 CMnum = 1ULL << (log_num + logN_in + 1 - log_ck);		// number of commits
     init_field(bits_of_prime, logN_in); //init field
 
 
@@ -722,16 +724,19 @@ int main_FXoverPhi_mult(int argc, char **argv)
     for (int i = 0; i < num * (int) N * 2; i ++)
         mpz_init(C_1[i]);
 
-    printf("..Memory allocated.\n");
+    printf("1.1. Memory allocated and Input Generated.\n");
 
     ////////// Vf commitkey gen (1-1)
+    st = clock();
     commit_keygen(pks, sks, CKnum);
-	printf("KeyGen (Commit) \n");
-
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_VERIFIER += elapsed_time;
+    printf("1.2. Verifier genertaed commit key.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Pv evaluates the circuit and commit the required values. (2)
     // Pv evaluates the circuit over polynomial rings. (2-1)
     // Assume that Vf gives and takes the **coefficients** of input polynomials; hence, Pv should do (i)fft.
+    st = clock();
     for (int i = 0; i < num; i ++) {
         fft(tmp1, 2 * N, v_3[2 * i], N);
         fft(tmp2, 2 * N, v_3[2 * i + 1], N);
@@ -742,29 +747,43 @@ int main_FXoverPhi_mult(int argc, char **argv)
         for (uint64 j = 0; j < N; j ++)
             mod_sub(v_1[i][j], v_2[i][j], v_2[i][j + N]);
     }
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_PROVER += elapsed_time;
+    printf("2.1. Prover evaluates the circuit.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
+
 
     ////////// Pv commits the values (2-2)
+    st = clock();
     for (int i = 0; i < num; i ++)
     		for (uint64 j = 0; j < 2 * N; j ++)
     		    mpz_set(CK_in[i * 2 * N + j], v_2[i][j]);
 
     commit_commit(commits, CK_in, CKnum, CMnum, pks);
-    printf("Prover commits \n");
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_PROVER += elapsed_time;
+    printf("2.2. Prover committed the values.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
-    printf("..Circuit evaluated.\n"); 
 
 
-    
     // Vf takes a random point val from our finite field, and Pv construct a reduced MLE circuit with val. (3)
     // Vf also should do the same procedure but only on the input and output layer.
     mod_random(val);
+    st = clock();
     for (int i = 0; i < num; i ++)
         coeff_evaluate(V_1[i], val, v_1[i], N); // Both Pv and Vf
-    for (int i = 0; i < num; i ++)
-        coeff_evaluate(V_2[i], val, v_2[i], 2 * N); // Pv
     for (int i = 0; i < num * 2; i ++)
         coeff_evaluate(V_3[i], val, v_3[i], N); // Both Pv and Vf
-    printf("..MLE constructed.\n"); 
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_PROVER += elapsed_time;
+    TIME_VERIFIER += elapsed_time;
+    printf("3.1.1. Construct one point reduced in-out layers.\n  Both +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
+
+    st = clock();
+    for (int i = 0; i < num; i ++)
+        coeff_evaluate(V_2[i], val, v_2[i], 2 * N); // Pv
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_PROVER += elapsed_time;
+    printf("3.1.2. Construct one point reduced circuit.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
     // GKR Protocol (4)
@@ -778,7 +797,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
         mod_init_random(r[i]);
         mpz_init(tmp_r[i]);
     }
-    printf("....Randomness fixed.\n"); 
+    printf("4.1. Randomness fixed.\n"); 
 
 
     ////////// Commit
@@ -794,14 +813,18 @@ int main_FXoverPhi_mult(int argc, char **argv)
 
 
     // Vf evaluates the MLE of input and output layers at the chosen point. (4-2)
+    st = clock();
     evaluate_V(V1z, V_1, log_num, z);
     for (int i = 0; i < log_num + 1; i ++)
         mpz_set(tmp_r[i], r[i + logN + 1]);
     evaluate_V(V3r, V_3, log_num + 1, tmp_r);
-    printf("....Prover Precomputed.\n"); 
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_VERIFIER += elapsed_time;
+    printf("4.2. Verifier computed the correct answers.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Pv generates the proof for the circuit. (4-3) 
     // Pv gives poly_V3_V2[][][], V_3[0], V_3[1], and C1r to Vf.
+    st = clock();
     initialize_beta(beta, log_num, z);
     initialize_tau2(tau_N, logN + 1, val);
     initialize_tau(tau_2N, logN + 1, val);
@@ -862,9 +885,13 @@ int main_FXoverPhi_mult(int argc, char **argv)
         update_V(tau_2N, num_terms, r[log_num + logN + 1 - round - 1]);
     }
     mpz_set(C1r, C_1[0]);
-    printf("....GKR Proof generated.\n");
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_PROVER += elapsed_time;
+    printf("4.3. Proof generated.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
+
 
     // Vf verifies the proof. (4-4)
+    st = clock();
     for (int i = 0; i < (int) logN + 1; i ++)
         mpz_set(tmp_r[i], r[i]);
     for (int i = 0; i < log_num; i ++)
@@ -925,26 +952,34 @@ int main_FXoverPhi_mult(int argc, char **argv)
         mod_mult(rir, rir, V_3[0]);
         mod_mult(tmp, r[logN + 1], V_3[1]);
         mod_add(rir, rir, tmp); // rir = (1-r0)V3(R0)+r0V3(R1) (= V3(Rr))
-        printf("..GKR all verified. Returns C1r (%s) and rir (%s).\n",
+        printf("..GKR all verified.\n..Returns C1r (%s) and rir (%s).\n",
                 mpz_get_str(0, digit_rep, C1r),
                 mpz_get_str(0, digit_rep, rir));
     }
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_VERIFIER += elapsed_time;
+    printf("4.4. Proof verified.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
 
     // Vf checks the consistencies: rir and V3r / C1r and commit (5)
 
     // Vf checks whether C1r is consistent with the commit. (5-1)
-
+    st = clock();
     kxi_eval(Cr_evalpts, CMnum, &(tmp_Cr[log_ck]));
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_VERIFIER += elapsed_time;
 
     // Open commit
     commit_open(CK_out, CK_in, Cr_evalpts, commits, CKnum, CMnum, sks);
 
+    st = clock();
 	evaluate_V(COMMIT_R, CK_out, log_ck, tmp_rCr);
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_VERIFIER += elapsed_time;
+
     ////////// Commit
-
-
+    st = clock();
     if(mpz_cmp(COMMIT_R, C1r)) {
         printf("Commit Fail: Inconsistent with the committed value: %s %s\n", 
                 mpz_get_str(0, digit_rep, C1r),
@@ -953,6 +988,9 @@ int main_FXoverPhi_mult(int argc, char **argv)
     } else {
         printf("....Consistent with the committed value.\n");
     }
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_VERIFIER += elapsed_time;
+    printf("5.1. Check consistency with the commit.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
     
     // Vf checks whether rir is consistent with the precomputed V3r. (5-2).
     if (mpz_cmp(V3r, rir)) {
@@ -964,19 +1002,25 @@ int main_FXoverPhi_mult(int argc, char **argv)
         printf("....Consistent with the original input.\n");
     }
 
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_VERIFIER += elapsed_time;
+    printf("5.2. Check consistency with the input layer.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
+
     if (stat) {
         printf("..Consistency verified.\n");
     }
-    
-    
+   
     
     printf("Result: %d\n", stat);
+    printf("Total time:\nVf: %f ms.\nPv: %f ms.\n", TIME_VERIFIER, TIME_PROVER);
     return stat;
 }
 
 
 int main_FX_mult(int argc, char **argv)
 {
+    clock_t st;
+    double elapsed_time;
     if(argc != 4) {
         printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num].\n");
         return 0;
@@ -1024,26 +1068,33 @@ int main_FX_mult(int argc, char **argv)
         for (uint64 j = N; j < N * 2; j ++)
             mpz_init_set_ui(v_3[i][j], 0);  // v_3 be the array of polynomials of degree N. (1)
     }
-    printf("..Memory allocated.\n");
+    printf("1.1. Memory allocated and Input generated.\n");
 
     // Pv evaluate the circuit over polynomial rings. (2)
     // Assume that Vf gives the **coefficients** of input polynomials; hence, Pv should do fft.
+    st = clock();
     for (int i = 0; i < num; i ++) {
         fft(tmp1, 2 * N, v_3[2 * i], N);
         fft(tmp2, 2 * N, v_3[2 * i + 1], N);
         fourier_mult(tmp3, tmp1, tmp2, 2 * N);
         ifft(v_2[i], tmp3, 2 * N);
     }
-    printf("..Circuit evaluated.\n"); 
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_PROVER += elapsed_time;
+    printf("2. Circuit evaluated.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Vf takes a random point val from our finite field, and Pv construct a reduced MLE circuit with val. (3-1)
     // Vf also should do the same procedure but only on the input and output layer. (3-2)
+    st = clock();
     mod_random(val);
     for (int i = 0; i < num; i ++)
         coeff_evaluate(V_2[i], val, v_2[i], 2 * N);
     for (int i = 0; i < num * 2; i ++)
         coeff_evaluate(V_3[i], val, v_3[i], N);
-    printf("..MLE constructed.\n"); 
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_PROVER += elapsed_time;
+    TIME_VERIFIER += elapsed_time;
+    printf("3. Constructed OPR circuit.\n  Both +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Vf fix the randomness, and precompute the desired values of input and output layer. (4-1)
     mpz_t *z = (mpz_t *) malloc(sizeof(mpz_t) * log_num),
@@ -1055,16 +1106,20 @@ int main_FX_mult(int argc, char **argv)
         mod_init_random(r[i]);
     for (int i = 0; i < log_num; i ++)
         mpz_init_set(tmp_r[i], r[i + 1]);
-    printf("....Randomness fixed.\n"); 
+    printf("4.1. Randomness fixed.\n"); 
 
     // Vf evaluate the MLE at the chosenm points. (4-2)
+    st = clock();
     evaluate_V(V2z, V_2, log_num, z);
     evaluate_V(V3r, V_3, log_num + 1, r);
-    printf("....Prover Precomputed.\n"); 
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_VERIFIER += elapsed_time;
+    printf("4.2. Verifier precomputes the correct answer.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // The GKR Protocol. (4-3)
     // Pv generates the proof for the circuit. 
     // Pv gives poly_V3_V2[][], V_3[0], V_3[1] to Vf.
+    st = clock();
     initialize_beta(beta, log_num, z);
     uint64 num_terms = 1ULL << log_num;
     for (int round = 0; round < log_num; round ++) {
@@ -1083,9 +1138,12 @@ int main_FX_mult(int argc, char **argv)
         update_V(V_3, num_terms << 1, r[log_num + 1- round - 1]);
         update_V(beta, num_terms, r[log_num + 1- round - 1]);
     }
-    printf("....GKR Proof generated.\n");
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_PROVER += elapsed_time;
+    printf("4.3. Proof generated.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Vf verifies the proof. (4-4)
+    st = clock();
     stat = stat ? sum_check_verification(rir, poly_V3_V2, V2z, 4, log_num, tmp_r, "GKR") : 0;
     if (stat) {
         printf("....GKR sumcheck verified.\n");
@@ -1111,8 +1169,12 @@ int main_FX_mult(int argc, char **argv)
 
     if (stat)
         printf("..GKR All Verified\n");
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_VERIFIER += elapsed_time;
+    printf("4.4. Proof verified.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Check the consistency between the result of GKR and the original input. (5)
+    st = clock();
     if (mpz_cmp(V3r, rir)) {
         printf("GKR Fail: Inconsistent with the input: %s %s.\n",
             mpz_get_str(0, digit_rep, V3r),
@@ -1122,8 +1184,12 @@ int main_FX_mult(int argc, char **argv)
     if (stat) {
         printf("..Consistent with the original input.\n");
     }
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_VERIFIER += elapsed_time;
+    printf("5. Check consistency with the input.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     printf("Result: %d\n", stat);
+    printf("Total time:\nVf: %f ms.\nPv: %f ms.\n", TIME_VERIFIER, TIME_PROVER);
     return stat;
 }
 
