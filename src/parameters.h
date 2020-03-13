@@ -22,6 +22,9 @@ extern uint64 N;
 
 extern mpz_t *ROU;
 
+extern double TIME_PROVER;
+extern double TIME_VERIFIER;
+
 int init_field(mp_bitcnt_t n, int logN_in);
 void free_field();
 

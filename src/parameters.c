@@ -7,7 +7,8 @@ long WORDS, BITS, digit_rep;
 uint64 logN, N;
 mpz_t *ROU;//2N th roots of unity
 gmp_randstate_t STATE;		// State for random
-
+double TIME_PROVER;
+double TIME_VERIFIER;
 
 /* Generator */
 
@@ -130,6 +131,8 @@ int init_field(mp_bitcnt_t n, int logN_in)
     printf("====================================================\n");
 
     mpz_clears(gen, odd, NULL);
+    TIME_PROVER = 0;
+    TIME_VERIFIER = 0;
     return 1;
 }
 
