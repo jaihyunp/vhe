@@ -748,7 +748,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
     		for (uint64 j = 0; j < 2 * N; j ++)
     		    mpz_set(CK_in[i * 2 * N + j], v_2[i][j]);
 
-    commit_commit(commits, CK_in, CKnum, CMnum, 0, pks);
+    commit_commit(commits, CK_in, CKnum, CMnum, pks);
     printf("Prover commits \n");
 
     printf("..Circuit evaluated.\n"); 
@@ -784,19 +784,12 @@ int main_FXoverPhi_mult(int argc, char **argv)
     ////////// Commit
     ////////// save random point for commited value evaluation.
     for (int i = 0; i < (int) logN + 1; i ++)
-    		mpz_set(tmp_r[i], r[i]);
-        //mpz_set(tmp_Cr[logN + log_num - i], r[i]);
+        mpz_set(tmp_Cr[logN + log_num - i], r[i]);					// tmp_Cr => reverse order
     for (int i = 0; i < log_num; i ++)
-    		mpz_set(tmp_r[i + logN + 1], r[i + 1 + logN + 1]);
-        //mpz_set(tmp_Cr[log_num - i - 1], r[i + 1 + logN + 1]);
-    evaluate_V(COMMIT_R, C_1, log_num + logN + 1, tmp_r);
-    printf("COMMIT_R: %s \n", mpz_get_str(0, digit_rep, COMMIT_R));
-
-    for (int i = 0; i < log_num + 1 + (int) logN; i ++)
-    		mpz_set(tmp_Cr[i], tmp_r[log_num + logN - i]);			// tmp_Cr => reverse order
+        mpz_set(tmp_Cr[log_num - i - 1], r[i + 1 + logN + 1]);
 
 	for (int i = 0; i < log_ck; ++i)
-		mpz_set(tmp_rCr[i], tmp_r[log_num + logN - log_ck + i]);
+		mpz_set(tmp_rCr[i], tmp_Cr[log_ck - 1 - i]);  				// tmp_rCr => order
 
 
 
@@ -946,7 +939,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
     kxi_eval(Cr_evalpts, CMnum, &(tmp_Cr[log_ck]));
 
     // Open commit
-    commit_open(CK_out, CK_in, Cr_evalpts, commits, CKnum, CMnum, 0, sks);
+    commit_open(CK_out, CK_in, Cr_evalpts, commits, CKnum, CMnum, sks);
 
 	evaluate_V(COMMIT_R, CK_out, log_ck, tmp_rCr);
     ////////// Commit
