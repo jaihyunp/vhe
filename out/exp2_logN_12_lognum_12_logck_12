@@ -1,0 +1,71 @@
+0: ./bin/vc2.exe
+1: 128
+2: 12
+3: 12
+4: 12
+====================================================
+ Parameter Settetting
+----------------------------------------------------
+N(logN): 4096(12)
+PRIME: f0c000ff1ffffffc00007f8000ffc001
+GSIZE: 1e18001fe3ffffff80000ff0001ff8003
+Gen of Z_PRIME: 3
+gen of Z_GSIZE: 1cb4febbbd469dfee2bbe770ed8d930fa
+====================================================
+1.1. Memory allocated and Input Generated.
+1.2. Verifier genertaed commit key.
+  Verifier +16.525000
+  16.525000/0.000000.
+-----------------------------------
+2.1. Prover evaluates the circuit.
+  Prover +147218.509000
+  16.525000/147218.509000.
+-----------------------------------
+2.2. Prover committed the values.
+  Prover +143245.279000
+  16.525000/290463.788000.
+-----------------------------------
+3.1.1. Construct one point reduced in-out layers.
+  Both +9471.269000
+  9487.794000/299935.057000.
+-----------------------------------
+3.1.2. Construct one point reduced circuit.
+  Prover +6159.776000
+  9487.794000/306094.833000.
+-----------------------------------
+4.1. Randomness fixed.
+4.2. Verifier computed the correct answers.
+  Verifier +3.580000
+  9491.374000/306094.833000.
+-----------------------------------
+4.3. Proof generated.
+  Prover +67206.545000
+  9491.374000/373301.378000.
+-----------------------------------
+....GKR V1->C1 sumcheck verified.
+....GKR V2->C1 sumcheck verified.
+....GKR V2->V3 sumcheck verified.
+..GKR all verified.
+..Returns C1r (39a3d57130dcfda74aae2db0b7ffead6) and rir (40bdddc0e2e12ec2812439188579fdc7).
+4.4. Proof verified.
+  Verifier +1.110000
+  9492.484000/373301.378000.
+-----------------------------------
+Prover time is: 3651.693000 ms
+Correct commit!
+Verifier time is: 33.292000 ms
+....Consistent with the committed value.
+5.1. Check consistency with the commit.
+  Verifier +0.001000
+  9528.934000/376953.071000.
+-----------------------------------
+....Consistent with the original input.
+5.2. Check consistency with the input layer.
+  Verifier +0.006000
+  9528.940000/376953.071000.
+-----------------------------------
+..Consistency verified.
+Result: 1
+Total time:
+Vf: 9528.940000 ms.
+Pv: 376953.071000 ms.

@@ -1,0 +1,71 @@
+0: ./bin/vc2.exe
+1: 128
+2: 12
+3: 6
+4: 9
+====================================================
+ Parameter Settetting
+----------------------------------------------------
+N(logN): 4096(12)
+PRIME: f0c000ff1ffffffc00007f8000ffc001
+GSIZE: 1e18001fe3ffffff80000ff0001ff8003
+Gen of Z_PRIME: 3
+gen of Z_GSIZE: 1cb4febbbd469dfee2bbe770ed8d930fa
+====================================================
+1.1. Memory allocated and Input Generated.
+1.2. Verifier genertaed commit key.
+  Verifier +2.136000
+  2.136000/0.000000.
+-----------------------------------
+2.1. Prover evaluates the circuit.
+  Prover +2732.652000
+  2.136000/2732.652000.
+-----------------------------------
+2.2. Prover committed the values.
+  Prover +2183.544000
+  2.136000/4916.196000.
+-----------------------------------
+3.1.1. Construct one point reduced in-out layers.
+  Both +135.963000
+  138.099000/5052.159000.
+-----------------------------------
+3.1.2. Construct one point reduced circuit.
+  Prover +90.082000
+  138.099000/5142.241000.
+-----------------------------------
+4.1. Randomness fixed.
+4.2. Verifier computed the correct answers.
+  Verifier +0.062000
+  138.161000/5142.241000.
+-----------------------------------
+4.3. Proof generated.
+  Prover +1044.112000
+  138.161000/6186.353000.
+-----------------------------------
+....GKR V1->C1 sumcheck verified.
+....GKR V2->C1 sumcheck verified.
+....GKR V2->V3 sumcheck verified.
+..GKR all verified.
+..Returns C1r (6c784eae57537b9744bcba929c098d19) and rir (4b71d0065ba5aa1e6345269ca9170621).
+4.4. Proof verified.
+  Verifier +0.784000
+  138.945000/6186.353000.
+-----------------------------------
+Prover time is: 55.956000 ms
+Correct commit!
+Verifier time is: 4.164000 ms
+....Consistent with the committed value.
+5.1. Check consistency with the commit.
+  Verifier +0.001000
+  143.500000/6242.309000.
+-----------------------------------
+....Consistent with the original input.
+5.2. Check consistency with the input layer.
+  Verifier +0.004000
+  143.504000/6242.309000.
+-----------------------------------
+..Consistency verified.
+Result: 1
+Total time:
+Vf: 143.504000 ms.
+Pv: 6242.309000 ms.

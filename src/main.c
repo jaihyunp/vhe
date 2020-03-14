@@ -14,9 +14,11 @@ int main_RXoverPhi_mult(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
-    return main_FX_mult(argc, argv);
+    for (int i = 0; i < argc; i ++)
+        printf("%d: %s\n", i, argv[i]);
+//    return main_FX_mult(argc, argv);
 //    return main_FXoverPhi_mult(argc, argv);
-//    return main_RXoverPhi_mult(argc, argv);
+    return main_RXoverPhi_mult(argc, argv);
 }
 
 
@@ -201,23 +203,33 @@ int main_RXoverPhi_mult(int argc, char **argv)
         fft(tmp2, 2 * N, v_3[2 * i + 1], N);
         fourier_mult(tmp3, tmp1, tmp2, 2 * N);
         ifft(v_2[i], tmp3, 2 * N);
-        for (uint64 j = 0; j < 2 * N; j ++)
-            mpz_set(C_1[i * 2 * N + j], v_2[i][j]);
         for (uint64 j = 0; j < N; j ++) {
             mod_sub(v_1[i][j], v_2[i][j], v_2[i][j + N]);
             mod_add(v_1[i][j], v_1[i][j], BITMAX);  // Is this safe?
+            mpz_mod(v_0[i][j], v_1[i][j], Q);
+        }
+    }
+    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    printf("Original circuit: %f\n", elapsed_time);
+
+    st = clock();
+    for (int i = 0; i < num; i ++) {
+        for (uint64 j = 0; j < 2 * N; j ++)
+            mpz_set(C_1[i * 2 * N + j], v_2[i][j]);
+
+        for (uint64 j = 0; j < N; j ++) {
             for (int k = 0; k < ubits * 4; k ++) { //additional cost?
                 if (mpz_tstbit(v_1[i][j], k))
                     mpz_set_ui(C_0[(i * N + j) * ubits * 4 + k], 1);
                 else
                     mpz_set_ui(C_0[(i * N + j) * ubits * 4 + k], 0);
             }
-            mpz_mod(v_0[i][j], v_1[i][j], Q);
         }
     }
-    elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
-    TIME_PROVER += elapsed_time;
-    printf("2.1. Circuit evaluated.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
+    double elapsed_time2 = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
+    TIME_PROVER += elapsed_time + elapsed_time2;
+    printf("Additional circuit: %f\n", elapsed_time2);
+    printf("2.1. Circuit evaluated.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time + elapsed_time2, TIME_VERIFIER, TIME_PROVER);
 
 
     // Pv commits the values (2-2).
