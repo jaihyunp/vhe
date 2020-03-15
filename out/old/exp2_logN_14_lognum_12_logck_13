@@ -1,0 +1,71 @@
+0: ./bin/vc2.exe
+1: 128
+2: 14
+3: 12
+4: 13
+====================================================
+ Parameter Settetting
+----------------------------------------------------
+N(logN): 16384(14)
+PRIME: ff800001fffffc01fe0000007fff0001
+GSIZE: 1ff000003fffff803fc000000fffe0003
+Gen of Z_PRIME: 3
+gen of Z_GSIZE: 428cdb47a2fe0818e273fb66969ad2c4
+====================================================
+1.1. Memory allocated and Input Generated.
+1.2. Verifier genertaed commit key.
+  Verifier +33.184000
+  33.184000/0.000000.
+-----------------------------------
+2.1. Prover evaluates the circuit.
+  Prover +688171.926000
+  33.184000/688171.926000.
+-----------------------------------
+2.2. Prover committed the values.
+  Prover +576435.165000
+  33.184000/1264607.091000.
+-----------------------------------
+3.1.1. Construct one point reduced in-out layers.
+  Both +35841.542000
+  35874.726000/1300448.633000.
+-----------------------------------
+3.1.2. Construct one point reduced circuit.
+  Prover +23951.826000
+  35874.726000/1324400.459000.
+-----------------------------------
+4.1. Randomness fixed.
+4.2. Verifier computed the correct answers.
+  Verifier +3.564000
+  35878.290000/1324400.459000.
+-----------------------------------
+4.3. Proof generated.
+  Prover +273513.123000
+  35878.290000/1597913.582000.
+-----------------------------------
+....GKR V1->C1 sumcheck verified.
+....GKR V2->C1 sumcheck verified.
+....GKR V2->V3 sumcheck verified.
+..GKR all verified.
+..Returns C1r (e9f68991fced7a7145db076dde301871) and rir (c8e50df64777e03eecd92e44ad92d327).
+4.4. Proof verified.
+  Verifier +1.155000
+  35879.445000/1597913.582000.
+-----------------------------------
+Prover time is: 14829.951000 ms
+Correct commit!
+Verifier time is: 66.425000 ms
+....Consistent with the committed value.
+5.1. Check consistency with the commit.
+  Verifier +0.001000
+  35952.152000/1612743.533000.
+-----------------------------------
+....Consistent with the original input.
+5.2. Check consistency with the input layer.
+  Verifier +0.006000
+  35952.158000/1612743.533000.
+-----------------------------------
+..Consistency verified.
+Result: 1
+Total time:
+Vf: 35952.158000 ms.
+Pv: 1612743.533000 ms.

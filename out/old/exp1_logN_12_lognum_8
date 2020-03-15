@@ -1,0 +1,43 @@
+====================================================
+ Parameter Settetting
+----------------------------------------------------
+N(logN): 4096(12)
+PRIME: f0c000ff1ffffffc00007f8000ffc001
+GSIZE: 1e18001fe3ffffff80000ff0001ff8003
+Gen of Z_PRIME: 3
+gen of Z_GSIZE: 1cb4febbbd469dfee2bbe770ed8d930fa
+====================================================
+1.1. Memory allocated and Input generated.
+2. Circuit evaluated.
+  Prover +8547.638000
+  0.000000/8547.638000.
+-----------------------------------
+3. Constructed OPR circuit.
+  Both +727.038000
+  727.038000/9274.676000.
+-----------------------------------
+4.1. Randomness fixed.
+4.2. Verifier precomputes the correct answer.
+  Verifier +0.245000
+  727.283000/9274.676000.
+-----------------------------------
+4.3. Proof generated.
+  Prover +0.587000
+  727.283000/9275.263000.
+-----------------------------------
+....GKR sumcheck verified.
+....GKR one point reduction verified.
+..GKR All Verified
+4.4. Proof verified.
+  Verifier +0.158000
+  727.441000/9275.263000.
+-----------------------------------
+..Consistent with the original input.
+5. Check consistency with the input.
+  Verifier +0.001000
+  727.442000/9275.263000.
+-----------------------------------
+Result: 1
+Total time:
+Vf: 727.442000 ms.
+Pv: 9275.263000 ms.
