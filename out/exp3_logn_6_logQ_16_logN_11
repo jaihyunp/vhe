@@ -14,38 +14,38 @@ gen of Z_GSIZE: 116df17addaac4a45dbe652b5f3d4d582
 ====================================================
 1.1. Memory allocated and Input generated
 1.2. Verifier genertaed commit key.
-  Verifier +0.306000
-  0.306000/0.000000.
+  Verifier +10.329000
+  10.329000/0.000000.
 -----------------------------------
-Original circuit: 944.074000
-Additional circuit: 434.153000
+Original circuit: 934.240000
+Additional circuit: 436.627000
 2.1. Circuit evaluated.
-  Prover +1378.227000
-  0.306000/1378.227000.
+  Prover +1370.867000
+  10.329000/1370.867000.
 -----------------------------------
 Prover commits0 
 Prover commits1 
 2.2. Prover committed the values.
-  Prover +1781.344000
-  0.306000/3159.571000.
+  Prover +1913.607000
+  10.329000/3284.474000.
 -----------------------------------
 3.1.1. Construct OPR circuit on input and output layers.
-  Both +68.352000
-  68.658000/3227.923000.
+  Both +70.690000
+  81.019000/3355.164000.
 -----------------------------------
 3.1.2. Construct OPR circuit of the entire circuit.
-  Prover +53.154000
-  68.658000/3281.077000.
+  Prover +54.803000
+  81.019000/3409.967000.
 -----------------------------------
 4.1. Randomness fixed.
 ....Prover Precomputed.
 4.2. Verifier precompute the correct answer.
-  Verifier +0.063000
-  68.721000/3281.077000.
+  Verifier +0.062000
+  81.081000/3409.967000.
 -----------------------------------
 4.3. Proof generated.
-  Prover +25290.769000
-  68.721000/28571.846000.
+  Prover +25166.097000
+  81.081000/28576.064000.
 -----------------------------------
 ....GKR C0->bits sumcheck verified.
 ....GKR V0->C0 sumcheck verified.
@@ -54,56 +54,57 @@ Prover commits1
 ....GKR V2->C1 sumcheck verified.
 ....GKR V2->V3 sumcheck verified.
 ..GKR all verified.
-..Returns polys, C0r (b77a7623b7bc396d2e642c9be2635a95), C1r (6e25eaaa5a89077ddc23684df147c842) and rir (fff2cf96ec4cb9e2f7a64b3358b03598).
+..Returns polys, C0r (c275a6b8fd712b6f4abff8087153b510), C1r (b65099ab1449e7d6aa13316afcf246d8) and rir (146e130ef3251d646795b34154354174).
 4.4. Proof verified.
-  Verifier +1.906000
-  70.627000/28571.846000.
+  Verifier +1.893000
+  82.974000/28576.064000.
 -----------------------------------
 5.1.1. commit: kxi eval.
-  Verifier +37.335000
-  107.962000/28571.846000.
+  Verifier +1.145000
+  84.119000/28576.064000.
 -----------------------------------
-Prover time is: 535.096000 ms
+Prover time is: 532.631000 ms
 Correct commit!
-Verifier time is: 566.617000 ms
+Verifier time is: 17.196000 ms
 Opening Commit0 done!
-Prover time is: 36.313000 ms
+Prover time is: 35.718000 ms
 Correct commit!
-Verifier time is: 140.164000 ms
+Verifier time is: 2.275000 ms
 5.1.3. commit: evaluate_V.
-  Verifier +0.027000
-  814.770000/29143.255000.
+  Verifier +0.772000
+  104.362000/29144.413000.
 -----------------------------------
 ....Consistent with the committed 0 value.
 ....Consistent with the committed 1 value.
 5.1.4. commit: check consistency
   Verifier +0.001000
-  814.771000/29143.255000.
+  104.363000/29144.413000.
 -----------------------------------
 ....Consistent with the original input.
 5.2. Check consistency with the input
   Verifier +0.001000
-  814.772000/29143.255000.
+  104.364000/29144.413000.
 -----------------------------------
 ..Consistency verified.
 Result: PASS
 Total time:
-Vf: 814.772000 ms.
-Pv: 29143.255000 ms.
+Vf: 104.364000 ms.
+Pv: 29144.413000 ms.
 
 
 Experiment 3: mult over Z_Q[t]/phi
 logN=11
 logn=6
-(calculated)logck0=6
-logck1=3
-IO Layer(Vf):68.417000
-GKR(Vf):1.906000
-GKR(Pv):25290.769000
-MLE Gen(Pv):555.659000
-Eval(Pv):944.074000
-Open Commit(Pv):571.409000
-Open Commit(Vf):744.143000
-Commit Keygen (Vf):0.306000
-Commit(Pv):1781.344000
-Error: Vf time: 814.772000 814.772000
+(calculated)logck0=11
+logck1=9
+IO Layer(Vf):70.754000
+GKR(Vf):1.893000
+GKR(Pv):25166.097000
+MLE Gen(Pv):562.120000
+Eval(Pv):934.240000
+Open Commit(Pv):568.349000
+Open Commit(Vf):21.388000
+Commit Keygen (Vf):10.329000
+Commit(Pv):1913.607000
+Error: Vf time: 104.364000 104.364000
+Error: Pv time: 29144.413000 29144.413000

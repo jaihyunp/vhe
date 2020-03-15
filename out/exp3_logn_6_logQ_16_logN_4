@@ -14,38 +14,38 @@ gen of Z_GSIZE: 111df9c0a28ca31fe6769db31239d2533
 ====================================================
 1.1. Memory allocated and Input generated
 1.2. Verifier genertaed commit key.
-  Verifier +0.292000
-  0.292000/0.000000.
+  Verifier +1.162000
+  1.162000/0.000000.
 -----------------------------------
-Original circuit: 3.606000
-Additional circuit: 3.357000
+Original circuit: 3.602000
+Additional circuit: 3.360000
 2.1. Circuit evaluated.
-  Prover +6.963000
-  0.292000/6.963000.
+  Prover +6.962000
+  1.162000/6.962000.
 -----------------------------------
 Prover commits0 
 Prover commits1 
 2.2. Prover committed the values.
-  Prover +9.704000
-  0.292000/16.667000.
+  Prover +10.030000
+  1.162000/16.992000.
 -----------------------------------
 3.1.1. Construct OPR circuit on input and output layers.
-  Both +0.536000
-  0.828000/17.203000.
+  Both +0.543000
+  1.705000/17.535000.
 -----------------------------------
 3.1.2. Construct OPR circuit of the entire circuit.
-  Prover +0.388000
-  0.828000/17.591000.
+  Prover +0.396000
+  1.705000/17.931000.
 -----------------------------------
 4.1. Randomness fixed.
 ....Prover Precomputed.
 4.2. Verifier precompute the correct answer.
   Verifier +0.059000
-  0.887000/17.591000.
+  1.764000/17.931000.
 -----------------------------------
 4.3. Proof generated.
-  Prover +192.104000
-  0.887000/209.695000.
+  Prover +192.461000
+  1.764000/210.392000.
 -----------------------------------
 ....GKR C0->bits sumcheck verified.
 ....GKR V0->C0 sumcheck verified.
@@ -54,56 +54,57 @@ Prover commits1
 ....GKR V2->C1 sumcheck verified.
 ....GKR V2->V3 sumcheck verified.
 ..GKR all verified.
-..Returns polys, C0r (f25bb9d557528590828d498412c238cc), C1r (e6ab11dfd6c3b327e1f61025dde0a4fa) and rir (1af2115ec5cf30acea5ef37987b2b599).
+..Returns polys, C0r (d3655a6b41af07080628b682a8d9386f), C1r (c4d00c7e9fffa2f3baf3412460a5da84) and rir (197b6a0f9d77296f5b4630d05a7d7f67).
 4.4. Proof verified.
-  Verifier +1.301000
-  2.188000/209.695000.
+  Verifier +1.306000
+  3.070000/210.392000.
 -----------------------------------
 5.1.1. commit: kxi eval.
-  Verifier +0.277000
-  2.465000/209.695000.
+  Verifier +0.074000
+  3.144000/210.392000.
 -----------------------------------
-Prover time is: 2.218000 ms
+Prover time is: 2.207000 ms
 Correct commit!
-Verifier time is: 4.110000 ms
+Verifier time is: 1.068000 ms
 Opening Commit0 done!
-Prover time is: 0.217000 ms
+Prover time is: 0.194000 ms
 Correct commit!
-Verifier time is: 1.031000 ms
+Verifier time is: 0.264000 ms
 5.1.3. commit: evaluate_V.
-  Verifier +0.022000
-  7.628000/212.130000.
+  Verifier +0.086000
+  4.562000/212.793000.
 -----------------------------------
 ....Consistent with the committed 0 value.
 ....Consistent with the committed 1 value.
 5.1.4. commit: check consistency
   Verifier +0.001000
-  7.629000/212.130000.
+  4.563000/212.793000.
 -----------------------------------
 ....Consistent with the original input.
 5.2. Check consistency with the input
   Verifier +0.001000
-  7.630000/212.130000.
+  4.564000/212.793000.
 -----------------------------------
 ..Consistency verified.
 Result: PASS
 Total time:
-Vf: 7.630000 ms.
-Pv: 212.130000 ms.
+Vf: 4.564000 ms.
+Pv: 212.793000 ms.
 
 
 Experiment 3: mult over Z_Q[t]/phi
 logN=4
 logn=6
-(calculated)logck0=6
-logck1=3
-IO Layer(Vf):0.597000
-GKR(Vf):1.301000
-GKR(Pv):192.104000
-MLE Gen(Pv):4.281000
-Eval(Pv):3.606000
-Open Commit(Pv):2.435000
-Open Commit(Vf):5.440000
-Commit Keygen (Vf):0.292000
-Commit(Pv):9.704000
-Error: Vf time: 7.630000 7.630000
+(calculated)logck0=8
+logck1=5
+IO Layer(Vf):0.604000
+GKR(Vf):1.306000
+GKR(Pv):192.461000
+MLE Gen(Pv):4.299000
+Eval(Pv):3.602000
+Open Commit(Pv):2.401000
+Open Commit(Vf):1.492000
+Commit Keygen (Vf):1.162000
+Commit(Pv):10.030000
+Error: Vf time: 4.564000 4.564000
+Error: Pv time: 212.793000 212.793000

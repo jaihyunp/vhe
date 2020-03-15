@@ -14,38 +14,38 @@ gen of Z_GSIZE: e47b3bd29140d3c9fdccf630f028c94d
 ====================================================
 1.1. Memory allocated and Input generated
 1.2. Verifier genertaed commit key.
-  Verifier +0.320000
-  0.320000/0.000000.
+  Verifier +42.759000
+  42.759000/0.000000.
 -----------------------------------
-Original circuit: 24571.269000
-Additional circuit: 7139.357000
+Original circuit: 25994.902000
+Additional circuit: 7113.252000
 2.1. Circuit evaluated.
-  Prover +31710.626000
-  0.320000/31710.626000.
+  Prover +33108.154000
+  42.759000/33108.154000.
 -----------------------------------
 Prover commits0 
 Prover commits1 
 2.2. Prover committed the values.
-  Prover +28694.550000
-  0.320000/60405.176000.
+  Prover +35195.029000
+  42.759000/68303.183000.
 -----------------------------------
 3.1.1. Construct OPR circuit on input and output layers.
-  Both +1057.918000
-  1058.238000/61463.094000.
+  Both +1092.431000
+  1135.190000/69395.614000.
 -----------------------------------
 3.1.2. Construct OPR circuit of the entire circuit.
-  Prover +824.738000
-  1058.238000/62287.832000.
+  Prover +858.718000
+  1135.190000/70254.332000.
 -----------------------------------
 4.1. Randomness fixed.
 ....Prover Precomputed.
 4.2. Verifier precompute the correct answer.
-  Verifier +0.066000
-  1058.304000/62287.832000.
+  Verifier +0.064000
+  1135.254000/70254.332000.
 -----------------------------------
 4.3. Proof generated.
-  Prover +406180.254000
-  1058.304000/468468.086000.
+  Prover +405790.897000
+  1135.254000/476045.229000.
 -----------------------------------
 ....GKR C0->bits sumcheck verified.
 ....GKR V0->C0 sumcheck verified.
@@ -54,56 +54,56 @@ Prover commits1
 ....GKR V2->C1 sumcheck verified.
 ....GKR V2->V3 sumcheck verified.
 ..GKR all verified.
-..Returns polys, C0r (21fa224c1056710e23b007012e13f5b1), C1r (f604aa4485de06848ee5b66f307c316) and rir (6f18afd8ab60a01e8c98f6814931dff0).
+..Returns polys, C0r (cad5fc5c10aa3263a5223f6622853b50), C1r (50c463fd8a36b0da798d1bddc4db5a66) and rir (fc65a4b5a1bacde6d5f32c25160e920e).
 4.4. Proof verified.
-  Verifier +2.235000
-  1060.539000/468468.086000.
+  Verifier +2.274000
+  1137.528000/476045.229000.
 -----------------------------------
 5.1.1. commit: kxi eval.
-  Verifier +565.367000
-  1625.906000/468468.086000.
+  Verifier +4.276000
+  1141.804000/476045.229000.
 -----------------------------------
-Prover time is: 6160.215000 ms
+Prover time is: 8665.962000 ms
 Correct commit!
-Verifier time is: 8705.984000 ms
+Verifier time is: 68.010000 ms
 Opening Commit0 done!
-Prover time is: 467.511000 ms
+Prover time is: 569.394000 ms
 Correct commit!
-Verifier time is: 2161.850000 ms
+Verifier time is: 8.700000 ms
 5.1.3. commit: evaluate_V.
-  Verifier +0.032000
-  12493.772000/475095.812000.
+  Verifier +2.968000
+  1221.482000/485280.585000.
 -----------------------------------
 ....Consistent with the committed 0 value.
 ....Consistent with the committed 1 value.
 5.1.4. commit: check consistency
   Verifier +0.001000
-  12493.773000/475095.812000.
+  1221.483000/485280.585000.
 -----------------------------------
 ....Consistent with the original input.
 5.2. Check consistency with the input
-  Verifier +0.002000
-  12493.775000/475095.812000.
+  Verifier +0.001000
+  1221.484000/485280.585000.
 -----------------------------------
 ..Consistency verified.
 Result: PASS
 Total time:
-Vf: 12493.775000 ms.
-Pv: 475095.812000 ms.
+Vf: 1221.484000 ms.
+Pv: 485280.585000 ms.
 
 
 Experiment 3: mult over Z_Q[t]/phi
 logN=15
 logn=6
-(calculated)logck0=6
-logck1=3
-IO Layer(Vf):1057.987000
-GKR(Vf):2.235000
-GKR(Pv):406180.254000
-MLE Gen(Pv):9022.013000
-Eval(Pv):24571.269000
-Open Commit(Pv):6627.726000
-Open Commit(Vf):11433.233000
-Commit Keygen (Vf):0.320000
-Commit(Pv):28694.550000
-Error: Pv time: 475095.812000 475095.812000
+(calculated)logck0=13
+logck1=11
+IO Layer(Vf):1092.497000
+GKR(Vf):2.274000
+GKR(Pv):405790.897000
+MLE Gen(Pv):9064.401000
+Eval(Pv):25994.902000
+Open Commit(Pv):9235.356000
+Open Commit(Vf):83.954000
+Commit Keygen (Vf):42.759000
+Commit(Pv):35195.029000
+Error: Vf time: 1221.484000 1221.484000

@@ -17,8 +17,8 @@ int main(int argc, char **argv)
     for (int i = 0; i < argc; i ++)
         printf("%d: %s\n", i, argv[i]);
 //    return main_FX_mult(argc, argv);
-    return main_FXoverPhi_mult(argc, argv);
-//    return main_RXoverPhi_mult(argc, argv);
+//    return main_FXoverPhi_mult(argc, argv);
+    return main_RXoverPhi_mult(argc, argv);
 }
 
 
@@ -40,7 +40,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     while ((bits - 1) >> ++ log_bits);
     ubits = 1 << log_bits;
 
-    int log_ck0 = (logN + log_num + log_bits + 2) / 2, log_ck1 = (logN + log_num + 1) / 2;
+    int log_ck0 = (logN_in + log_num + log_bits + 2) / 2, log_ck1 = (logN_in + log_num + 1) / 2;
 
     uint64 CK0num = 1 << log_ck0;											// number of commit keys0
     uint64 CM0num = 1 << (log_num + logN_in + 2 + log_bits - log_ck0);		// number of commits0

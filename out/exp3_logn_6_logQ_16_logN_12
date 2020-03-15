@@ -14,38 +14,38 @@ gen of Z_GSIZE: 1cb4febbbd469dfee2bbe770ed8d930fa
 ====================================================
 1.1. Memory allocated and Input generated
 1.2. Verifier genertaed commit key.
-  Verifier +0.322000
-  0.322000/0.000000.
+  Verifier +18.594000
+  18.594000/0.000000.
 -----------------------------------
-Original circuit: 2093.093000
-Additional circuit: 875.957000
+Original circuit: 2022.997000
+Additional circuit: 885.181000
 2.1. Circuit evaluated.
-  Prover +2969.050000
-  0.322000/2969.050000.
+  Prover +2908.178000
+  18.594000/2908.178000.
 -----------------------------------
 Prover commits0 
 Prover commits1 
 2.2. Prover committed the values.
-  Prover +3771.041000
-  0.322000/6740.091000.
+  Prover +4115.063000
+  18.594000/7023.241000.
 -----------------------------------
 3.1.1. Construct OPR circuit on input and output layers.
-  Both +151.620000
-  151.942000/6891.711000.
+  Both +131.314000
+  149.908000/7154.555000.
 -----------------------------------
 3.1.2. Construct OPR circuit of the entire circuit.
-  Prover +113.806000
-  151.942000/7005.517000.
+  Prover +105.239000
+  149.908000/7259.794000.
 -----------------------------------
 4.1. Randomness fixed.
 ....Prover Precomputed.
 4.2. Verifier precompute the correct answer.
-  Verifier +0.063000
-  152.005000/7005.517000.
+  Verifier +0.062000
+  149.970000/7259.794000.
 -----------------------------------
 4.3. Proof generated.
-  Prover +50815.396000
-  152.005000/57820.913000.
+  Prover +50325.981000
+  149.970000/57585.775000.
 -----------------------------------
 ....GKR C0->bits sumcheck verified.
 ....GKR V0->C0 sumcheck verified.
@@ -54,57 +54,57 @@ Prover commits1
 ....GKR V2->C1 sumcheck verified.
 ....GKR V2->V3 sumcheck verified.
 ..GKR all verified.
-..Returns polys, C0r (d4e90fcebc6975e063b5b7020cdca17a), C1r (95daf1ceb8162b226e43963479674972) and rir (195796709f85771fda6514534636e23b).
+..Returns polys, C0r (49f20fdd6ebc215ab9c3eeb063fed86), C1r (4b0ac49c0d6e542cac8fda932ebbd87a) and rir (852ad098ff50eb163456816a8979d5c2).
 4.4. Proof verified.
-  Verifier +2.128000
-  154.133000/57820.913000.
+  Verifier +2.213000
+  152.183000/57585.775000.
 -----------------------------------
 5.1.1. commit: kxi eval.
-  Verifier +76.973000
-  231.106000/57820.913000.
+  Verifier +1.200000
+  153.383000/57585.775000.
 -----------------------------------
-Prover time is: 812.338000 ms
+Prover time is: 1072.781000 ms
 Correct commit!
-Verifier time is: 1133.369000 ms
+Verifier time is: 18.019000 ms
 Opening Commit0 done!
-Prover time is: 61.103000 ms
+Prover time is: 72.906000 ms
 Correct commit!
-Verifier time is: 283.542000 ms
+Verifier time is: 4.380000 ms
 5.1.3. commit: evaluate_V.
-  Verifier +0.034000
-  1648.051000/58694.354000.
+  Verifier +1.426000
+  177.208000/58731.462000.
 -----------------------------------
 ....Consistent with the committed 0 value.
 ....Consistent with the committed 1 value.
 5.1.4. commit: check consistency
-  Verifier +0.002000
-  1648.053000/58694.354000.
+  Verifier +0.001000
+  177.209000/58731.462000.
 -----------------------------------
 ....Consistent with the original input.
 5.2. Check consistency with the input
-  Verifier +0.002000
-  1648.055000/58694.354000.
+  Verifier +0.001000
+  177.210000/58731.462000.
 -----------------------------------
 ..Consistency verified.
 Result: PASS
 Total time:
-Vf: 1648.055000 ms.
-Pv: 58694.354000 ms.
+Vf: 177.210000 ms.
+Pv: 58731.462000 ms.
 
 
 Experiment 3: mult over Z_Q[t]/phi
 logN=12
 logn=6
-(calculated)logck0=6
-logck1=3
-IO Layer(Vf):151.687000
-GKR(Vf):2.128000
-GKR(Pv):50815.396000
-MLE Gen(Pv):1141.383000
-Eval(Pv):2093.093000
-Open Commit(Pv):873.441000
-Open Commit(Vf):1493.918000
-Commit Keygen (Vf):0.322000
-Commit(Pv):3771.041000
-Error: Vf time: 1648.055000 1648.055000
-Error: Pv time: 58694.354000 58694.354000
+(calculated)logck0=12
+logck1=9
+IO Layer(Vf):131.378000
+GKR(Vf):2.213000
+GKR(Pv):50325.981000
+MLE Gen(Pv):1121.734000
+Eval(Pv):2022.997000
+Open Commit(Pv):1145.687000
+Open Commit(Vf):25.025000
+Commit Keygen (Vf):18.594000
+Commit(Pv):4115.063000
+Error: Vf time: 177.210000 177.210000
+Error: Pv time: 58731.462000 58731.462000
