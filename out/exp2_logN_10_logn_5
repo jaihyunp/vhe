@@ -1,0 +1,85 @@
+0: ./bin/vc2.exe
+1: 128
+2: 10
+3: 5
+====================================================
+ Parameter Settetting
+----------------------------------------------------
+N(logN): 1024(10)
+PRIME: fc000000002007f000000fffff7ff001
+GSIZE: 1f800000000400fe000001ffffeffe003
+Gen of Z_PRIME: 3
+gen of Z_GSIZE: 209ddcaccc763b561b9c82aa85ca124
+====================================================
+1.1. Memory allocated and Input Generated.
+1.2. Verifier genertaed commit key.
+  Verifier +1.038000
+  1.038000/0.000000.
+-----------------------------------
+2.1. Prover evaluates the circuit.
+  Prover +224.536000
+  1.038000/224.536000.
+-----------------------------------
+2.2. Prover committed the values.
+  Prover +266.974000
+  1.038000/491.510000.
+-----------------------------------
+3.1.1. Construct one point reduced in-out layers.
+  Both +16.968000
+  18.006000/508.478000.
+-----------------------------------
+3.1.2. Construct one point reduced circuit.
+  Prover +11.251000
+  18.006000/519.729000.
+-----------------------------------
+4.1. Randomness fixed.
+4.2. Verifier computed the correct answers.
+  Verifier +0.033000
+  18.039000/519.729000.
+-----------------------------------
+4.3. Proof generated.
+  Prover +131.167000
+  18.039000/650.896000.
+-----------------------------------
+....GKR V1->C1 sumcheck verified.
+....GKR V2->C1 sumcheck verified.
+....GKR V2->V3 sumcheck verified.
+..GKR all verified.
+..Returns C1r (4af7bd1e91312be12e998b9365570b66) and rir (df5f2d97404aa37f99d958dcc467cf47).
+4.4. Proof verified.
+  Verifier +0.647000
+  18.686000/650.896000.
+-----------------------------------
+Prover time is: 6.992000 ms
+Correct commit!
+Verifier time is: 1.067000 ms
+....Consistent with the committed value.
+5.1. Check consistency with the commit.
+  Verifier +0.001000
+  19.891000/657.888000.
+-----------------------------------
+....Consistent with the original input.
+5.2. Check consistency with the input layer.
+  Verifier +0.001000
+  19.892000/657.888000.
+-----------------------------------
+..Consistency verified.
+Result: 1
+Total time:
+Vf: 19.892000 ms.
+Pv: 657.888000 ms.
+
+
+Experiment 1: mult over Z_p[t]
+logN=10
+logn=5
+(calculated)logck=8
+IO Layer(Vf):17.003000
+GKR(Vf):0.647000
+GKR(Pv):131.167000
+MLE Gen(Pv):28.219000
+Eval(Pv):224.536000
+Open Commit(Pv):6.992000
+Open Commit(Vf):1.204000
+Commit Keygen (Vf):1.038000
+Commit(Pv):266.974000

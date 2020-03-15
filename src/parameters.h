@@ -26,8 +26,13 @@ extern double TIME_PROVER;
 extern double TIME_VERIFIER;
 extern double TIME_VERIFIER_IOLAYER;
 extern double TIME_VERIFIER_GKR;
-extern double TIME_PROVER_GKR;
+extern double TIME_VERIFIER_COMKEY;
+extern double TIME_VERIFIER_OPENCOM;
 extern double TIME_PROVER_EVAL;
+extern double TIME_PROVER_MLEGEN;
+extern double TIME_PROVER_GKR;
+extern double TIME_PROVER_COMGEN;
+extern double TIME_PROVER_OPENCOM;
 
 int init_field(mp_bitcnt_t n, int logN_in);
 void free_field();

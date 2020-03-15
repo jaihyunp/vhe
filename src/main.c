@@ -16,25 +16,31 @@ int main(int argc, char **argv)
 {
     for (int i = 0; i < argc; i ++)
         printf("%d: %s\n", i, argv[i]);
-    return main_FX_mult(argc, argv);
-//    return main_FXoverPhi_mult(argc, argv);
+//    return main_FX_mult(argc, argv);
+    return main_FXoverPhi_mult(argc, argv);
 //    return main_RXoverPhi_mult(argc, argv);
 }
 
 
 int main_RXoverPhi_mult(int argc, char **argv)
 {
-    if(argc != 7) {
-        printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num] [bits] [log_ck0_bits] [log_ck1].\n");
+//    if(argc != 7) {
+//        printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num] [bits] [log_ck0_bits] [log_ck1].\n");
+//        return 0;
+//    }
+    if(argc != 5) {
+        printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num] [bits].\n");
         return 0;
     }
     clock_t st;
     double elapsed_time;
     long bits_of_prime = atol(argv[1]);
     int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), num = 1 << log_num, stat = 1,
-    		log_bits = 0, bits = atoi(argv[4]), log_ck0 = atoi(argv[5]), log_ck1 = atoi(argv[6]), ubits;
+    		log_bits = 0, bits = atoi(argv[4]), ubits;//, log_ck0 = atoi(argv[5]), log_ck1 = atoi(argv[6]), ubits;
     while ((bits - 1) >> ++ log_bits);
     ubits = 1 << log_bits;
+
+    int log_ck0 = (logN + log_num + log_bits + 2) / 2, log_ck1 = (logN + log_num + 1) / 2;
 
     uint64 CK0num = 1 << log_ck0;											// number of commit keys0
     uint64 CM0num = 1 << (log_num + logN_in + 2 + log_bits - log_ck0);		// number of commits0
@@ -190,6 +196,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     commit_keygen(pks1, sks1, CK1num);
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_COMKEY += elapsed_time;
     printf("1.2. Verifier genertaed commit key.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
@@ -228,6 +235,8 @@ int main_RXoverPhi_mult(int argc, char **argv)
     }
     double elapsed_time2 = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time + elapsed_time2;
+    TIME_PROVER_EVAL += elapsed_time;
+    TIME_PROVER_MLEGEN += elapsed_time2;
     printf("Additional circuit: %f\n", elapsed_time2);
     printf("2.1. Circuit evaluated.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time + elapsed_time2, TIME_VERIFIER, TIME_PROVER);
 
@@ -250,6 +259,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     printf("Prover commits1 \n");
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_COMGEN += elapsed_time;
     printf("2.2. Prover committed the values.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
@@ -264,7 +274,9 @@ int main_RXoverPhi_mult(int argc, char **argv)
         coeff_evaluate(V_3[i], val, v_3[i], N); // Both Pv and Vf
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_MLEGEN += elapsed_time;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_IOLAYER += elapsed_time;
     printf("3.1.1. Construct OPR circuit on input and output layers.\n  Both +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
     st = clock();
     for (int i = 0; i < num; i ++)
@@ -274,6 +286,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
             mpz_set(V_1[i * N + j], v_1[i][j]); // Pv
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_MLEGEN += elapsed_time;
     printf("3.1.2. Construct OPR circuit of the entire circuit.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
@@ -345,6 +358,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     printf("....Prover Precomputed.\n");
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_IOLAYER += elapsed_time;
     printf("4.2. Verifier precompute the correct answer.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Pv generates the proof for the circuit. (4-3)
@@ -564,6 +578,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     mpz_set(C1r, C_1[0]);
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_GKR += elapsed_time;
     printf("4.3. Proof generated.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
@@ -702,6 +717,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     }
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_GKR += elapsed_time;
     printf("4.4. Proof verified.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
@@ -714,6 +730,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     kxi_eval(C1r_evalpts, CM1num, &(tmp_C1r[log_ck1]));
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_OPENCOM += elapsed_time;
     printf("5.1.1. commit: kxi eval.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Open commit
@@ -726,6 +743,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
 	evaluate_V(COMMIT_R_1, CK1_out, log_ck1, tmp_rC1r);
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_OPENCOM += elapsed_time;
     printf("5.1.3. commit: evaluate_V.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
     ////////// Commit
 
@@ -748,6 +766,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     }
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_IOLAYER += elapsed_time;
     printf("5.1.4. commit: check consistency\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
@@ -763,6 +782,7 @@ int main_RXoverPhi_mult(int argc, char **argv)
     }
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_IOLAYER += elapsed_time;
     printf("5.2. Check consistency with the input\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     if (stat)
@@ -770,6 +790,26 @@ int main_RXoverPhi_mult(int argc, char **argv)
 
     printf("Result: %s\n", stat ? "PASS" : "FAIL");
     printf("Total time:\nVf: %f ms.\nPv: %f ms.\n", TIME_VERIFIER, TIME_PROVER);
+    
+    printf("\n\n");
+    printf("Experiment 3: mult over Z_Q[t]/phi\nlogN=%lld\nlogn=%d\n(calculated)logck0=%d\nlogck1=%d\n", logN, log_num, log_ck0, log_ck1);
+    printf("IO Layer(Vf):%f\n", TIME_VERIFIER_IOLAYER);
+    printf("GKR(Vf):%f\n", TIME_VERIFIER_GKR);
+    printf("GKR(Pv):%f\n", TIME_PROVER_GKR);
+    printf("MLE Gen(Pv):%f\n", TIME_PROVER_MLEGEN);
+    printf("Eval(Pv):%f\n", TIME_PROVER_EVAL);
+    printf("Open Commit(Pv):%f\n", TIME_PROVER_OPENCOM);
+    printf("Open Commit(Vf):%f\n", TIME_VERIFIER_OPENCOM);
+    printf("Commit Keygen (Vf):%f\n", TIME_VERIFIER_COMKEY);
+    printf("Commit(Pv):%f\n", TIME_PROVER_COMGEN);
+
+
+    if (TIME_VERIFIER != (TIME_VERIFIER_IOLAYER + TIME_VERIFIER_GKR + TIME_VERIFIER_COMKEY + TIME_VERIFIER_OPENCOM))
+        printf("Error: Vf time: %f %f\n", TIME_VERIFIER, TIME_VERIFIER_IOLAYER + TIME_VERIFIER_GKR + TIME_VERIFIER_COMKEY + TIME_VERIFIER_OPENCOM);
+    if (TIME_PROVER != (TIME_PROVER_GKR + TIME_PROVER_MLEGEN + TIME_PROVER_EVAL + TIME_PROVER_COMGEN + TIME_PROVER_OPENCOM))
+        printf("Error: Pv time: %f %f\n", TIME_PROVER, TIME_PROVER_GKR + TIME_PROVER_MLEGEN + TIME_PROVER_EVAL + TIME_PROVER_COMGEN + TIME_PROVER_OPENCOM);
+
+    
     return stat;
 }
 
@@ -777,14 +817,19 @@ int main_RXoverPhi_mult(int argc, char **argv)
 //Implementation of Verifiable Multiplication over Z_p[X]/(X^N + 1), where p is prime and N is power of two.
 int main_FXoverPhi_mult(int argc, char **argv)
 {
-    if(argc != 5) {
-        printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num] [logCKnum].\n");
+//    if(argc != 5) {
+//        printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num] [logCKnum].\n");
+//        return 0;
+//    }
+ 
+    if(argc != 4) {
+        printf("Sample usage: ./a.out [bit of prime (8k-1)] [logN] [log_num].\n");
         return 0;
     }
     clock_t st;
     double elapsed_time;
     long bits_of_prime = atol(argv[1]);
-    int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), log_ck = atoi(argv[4]), num = 1 << log_num, stat = 1;
+    int logN_in = atoi(argv[2]), log_num = atoi(argv[3]), log_ck = (logN_in + log_num + 1) / 2, num = 1 << log_num, stat = 1;
     uint64 CKnum = 1ULL << log_ck;							// number of commit keys
     uint64 CMnum = 1ULL << (log_num + logN_in + 1 - log_ck);		// number of commits
     init_field(bits_of_prime, logN_in); //init field
@@ -881,6 +926,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
     commit_keygen(pks, sks, CKnum);
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_COMKEY += elapsed_time;
     printf("1.2. Verifier genertaed commit key.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Pv evaluates the circuit and commit the required values. (2)
@@ -899,6 +945,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
     }
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_EVAL += elapsed_time;
     printf("2.1. Prover evaluates the circuit.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
@@ -911,6 +958,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
     commit_commit(commits, CK_in, CKnum, CMnum, pks);
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_COMGEN += elapsed_time;
     printf("2.2. Prover committed the values.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
@@ -925,7 +973,9 @@ int main_FXoverPhi_mult(int argc, char **argv)
         coeff_evaluate(V_3[i], val, v_3[i], N); // Both Pv and Vf
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_MLEGEN += elapsed_time;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_IOLAYER += elapsed_time;
     printf("3.1.1. Construct one point reduced in-out layers.\n  Both +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     st = clock();
@@ -933,6 +983,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
         coeff_evaluate(V_2[i], val, v_2[i], 2 * N); // Pv
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_MLEGEN += elapsed_time;
     printf("3.1.2. Construct one point reduced circuit.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
@@ -970,6 +1021,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
     evaluate_V(V3r, V_3, log_num + 1, tmp_r);
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_IOLAYER += elapsed_time;
     printf("4.2. Verifier computed the correct answers.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Pv generates the proof for the circuit. (4-3) 
@@ -1037,6 +1089,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
     mpz_set(C1r, C_1[0]);
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_GKR += elapsed_time;
     printf("4.3. Proof generated.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
@@ -1108,6 +1161,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
     }
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_GKR += elapsed_time;
     printf("4.4. Proof verified.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
 
@@ -1119,6 +1173,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
     kxi_eval(Cr_evalpts, CMnum, &(tmp_Cr[log_ck]));
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_OPENCOM += elapsed_time;
 
     // Open commit
     commit_open(CK_out, CK_in, Cr_evalpts, commits, CKnum, CMnum, sks);
@@ -1127,6 +1182,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
 	evaluate_V(COMMIT_R, CK_out, log_ck, tmp_rCr);
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_OPENCOM += elapsed_time;
 
     ////////// Commit
     st = clock();
@@ -1140,9 +1196,11 @@ int main_FXoverPhi_mult(int argc, char **argv)
     }
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_IOLAYER += elapsed_time;
     printf("5.1. Check consistency with the commit.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
     
     // Vf checks whether rir is consistent with the precomputed V3r. (5-2).
+    st = clock();
     if (mpz_cmp(V3r, rir)) {
         printf("GKR Fail: Inconsistent with the input: %s %s.\n",
             mpz_get_str(0, digit_rep, V3r),
@@ -1154,6 +1212,7 @@ int main_FXoverPhi_mult(int argc, char **argv)
 
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_IOLAYER += elapsed_time;
     printf("5.2. Check consistency with the input layer.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     if (stat) {
@@ -1163,6 +1222,24 @@ int main_FXoverPhi_mult(int argc, char **argv)
     
     printf("Result: %d\n", stat);
     printf("Total time:\nVf: %f ms.\nPv: %f ms.\n", TIME_VERIFIER, TIME_PROVER);
+
+    printf("\n\n");
+    printf("Experiment 2: mult over Z_p[t]/phi\nlogN=%lld\nlogn=%d\n(calculated)logck=%d\n", logN, log_num, log_ck);
+    printf("IO Layer(Vf):%f\n", TIME_VERIFIER_IOLAYER);
+    printf("GKR(Vf):%f\n", TIME_VERIFIER_GKR);
+    printf("GKR(Pv):%f\n", TIME_PROVER_GKR);
+    printf("MLE Gen(Pv):%f\n", TIME_PROVER_MLEGEN);
+    printf("Eval(Pv):%f\n", TIME_PROVER_EVAL);
+    printf("Open Commit(Pv):%f\n", TIME_PROVER_OPENCOM);
+    printf("Open Commit(Vf):%f\n", TIME_VERIFIER_OPENCOM);
+    printf("Commit Keygen (Vf):%f\n", TIME_VERIFIER_COMKEY);
+    printf("Commit(Pv):%f\n", TIME_PROVER_COMGEN);
+
+    if (TIME_VERIFIER != (TIME_VERIFIER_IOLAYER + TIME_VERIFIER_GKR + TIME_VERIFIER_COMKEY + TIME_VERIFIER_OPENCOM))
+        printf("Error: Vf time: %f %f\n", TIME_VERIFIER, TIME_VERIFIER_IOLAYER + TIME_VERIFIER_GKR + TIME_VERIFIER_COMKEY + TIME_VERIFIER_OPENCOM);
+    if (TIME_PROVER != (TIME_PROVER_GKR + TIME_PROVER_MLEGEN + TIME_PROVER_EVAL + TIME_PROVER_COMGEN + TIME_PROVER_OPENCOM))
+        printf("Error: Pv time: %f %f\n", TIME_PROVER, TIME_PROVER_GKR + TIME_PROVER_MLEGEN + TIME_PROVER_EVAL + TIME_PROVER_COMGEN + TIME_PROVER_OPENCOM);
+
     return stat;
 }
 
@@ -1244,7 +1321,9 @@ int main_FX_mult(int argc, char **argv)
         coeff_evaluate(V_3[i], val, v_3[i], N);
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_MLEGEN += elapsed_time;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_IOLAYER += elapsed_time;
     printf("3. Constructed OPR circuit.\n  Both +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Vf fix the randomness, and precompute the desired values of input and output layer. (4-1)
@@ -1265,6 +1344,7 @@ int main_FX_mult(int argc, char **argv)
     evaluate_V(V3r, V_3, log_num + 1, r);
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_IOLAYER += elapsed_time;
     printf("4.2. Verifier precomputes the correct answer.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // The GKR Protocol. (4-3)
@@ -1291,6 +1371,7 @@ int main_FX_mult(int argc, char **argv)
     }
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_GKR += elapsed_time;
     printf("4.3. Proof generated.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Vf verifies the proof. (4-4)
@@ -1322,6 +1403,7 @@ int main_FX_mult(int argc, char **argv)
         printf("..GKR All Verified\n");
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_GKR += elapsed_time;
     printf("4.4. Proof verified.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Check the consistency between the result of GKR and the original input. (5)
@@ -1337,10 +1419,23 @@ int main_FX_mult(int argc, char **argv)
     }
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_IOLAYER += elapsed_time;
     printf("5. Check consistency with the input.\n  Verifier +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     printf("Result: %d\n", stat);
     printf("Total time:\nVf: %f ms.\nPv: %f ms.\n", TIME_VERIFIER, TIME_PROVER);
+
+    printf("\n\n");
+    printf("Experiment 1: mult over Z_p[t]\nlogN=%lld\nlogn=%d\n", logN, log_num);
+    printf("IO Layer(Vf):%f\n", TIME_VERIFIER_IOLAYER);
+    printf("GKR(Vf):%f\n", TIME_VERIFIER_GKR);
+    printf("GKR(Pv):%f\n", TIME_PROVER_GKR);
+    printf("MLE Gen(Pv):%f\n", TIME_PROVER_MLEGEN);
+    printf("Eval(Pv):%f\n", TIME_PROVER_EVAL);
+    if (TIME_VERIFIER != (TIME_VERIFIER_IOLAYER + TIME_VERIFIER_GKR))
+        printf("Error: Vf time\n");
+    if (TIME_PROVER != (TIME_PROVER_GKR + TIME_PROVER_MLEGEN + TIME_PROVER_EVAL))
+        printf("Error: Pv time\n");
     return stat;
 }
 

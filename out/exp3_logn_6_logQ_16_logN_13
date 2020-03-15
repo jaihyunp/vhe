@@ -1,0 +1,108 @@
+0: ./bin/vc3.exe
+1: 128
+2: 13
+3: 6
+4: 16
+====================================================
+ Parameter Settetting
+----------------------------------------------------
+N(logN): 8192(13)
+PRIME: e00000000000ffffff80000000078001
+GSIZE: 1c00000000001ffffff000000000f0003
+Gen of Z_PRIME: 3
+gen of Z_GSIZE: f081181c238cdd678c8b1f4e507e539
+====================================================
+1.1. Memory allocated and Input generated
+1.2. Verifier genertaed commit key.
+  Verifier +0.323000
+  0.323000/0.000000.
+-----------------------------------
+Original circuit: 4672.533000
+Additional circuit: 1781.688000
+2.1. Circuit evaluated.
+  Prover +6454.221000
+  0.323000/6454.221000.
+-----------------------------------
+Prover commits0 
+Prover commits1 
+2.2. Prover committed the values.
+  Prover +6527.047000
+  0.323000/12981.268000.
+-----------------------------------
+3.1.1. Construct OPR circuit on input and output layers.
+  Both +276.469000
+  276.792000/13257.737000.
+-----------------------------------
+3.1.2. Construct OPR circuit of the entire circuit.
+  Prover +224.927000
+  276.792000/13482.664000.
+-----------------------------------
+4.1. Randomness fixed.
+....Prover Precomputed.
+4.2. Verifier precompute the correct answer.
+  Verifier +0.062000
+  276.854000/13482.664000.
+-----------------------------------
+4.3. Proof generated.
+  Prover +100841.391000
+  276.854000/114324.055000.
+-----------------------------------
+....GKR C0->bits sumcheck verified.
+....GKR V0->C0 sumcheck verified.
+....GKR V1->C0 sumcheck verified.
+....GKR V1->C1 sumcheck verified.
+....GKR V2->C1 sumcheck verified.
+....GKR V2->V3 sumcheck verified.
+..GKR all verified.
+..Returns polys, C0r (f8d46711e41545b740c2039684e6abf), C1r (d4e1542220a014283adbcdb045a32d62) and rir (2d57f0295476ce75940a6d1dcd386e42).
+4.4. Proof verified.
+  Verifier +2.087000
+  278.941000/114324.055000.
+-----------------------------------
+5.1.1. commit: kxi eval.
+  Verifier +148.232000
+  427.173000/114324.055000.
+-----------------------------------
+Prover time is: 2167.298000 ms
+Correct commit!
+Verifier time is: 2127.944000 ms
+Opening Commit0 done!
+Prover time is: 144.589000 ms
+Correct commit!
+Verifier time is: 534.749000 ms
+5.1.3. commit: evaluate_V.
+  Verifier +0.029000
+  3089.895000/116635.942000.
+-----------------------------------
+....Consistent with the committed 0 value.
+....Consistent with the committed 1 value.
+5.1.4. commit: check consistency
+  Verifier +0.002000
+  3089.897000/116635.942000.
+-----------------------------------
+....Consistent with the original input.
+5.2. Check consistency with the input
+  Verifier +0.001000
+  3089.898000/116635.942000.
+-----------------------------------
+..Consistency verified.
+Result: PASS
+Total time:
+Vf: 3089.898000 ms.
+Pv: 116635.942000 ms.
+
+
+Experiment 3: mult over Z_Q[t]/phi
+logN=13
+logn=6
+(calculated)logck0=6
+logck1=3
+IO Layer(Vf):276.534000
+GKR(Vf):2.087000
+GKR(Pv):100841.391000
+MLE Gen(Pv):2283.084000
+Eval(Pv):4672.533000
+Open Commit(Pv):2311.887000
+Open Commit(Vf):2810.954000
+Commit Keygen (Vf):0.323000
+Commit(Pv):6527.047000

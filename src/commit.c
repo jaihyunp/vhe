@@ -56,6 +56,7 @@ void commit_open(mpz_t* output, const mpz_t* input, const mpz_t* evalpts, const 
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     printf("Prover time is: %f ms\n", elapsed_time);
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_OPENCOM += elapsed_time;
 
 	st = clock();
 // Verifier checks the validity of output
@@ -84,6 +85,7 @@ void commit_open(mpz_t* output, const mpz_t* input, const mpz_t* evalpts, const 
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     printf("Verifier time is: %f ms\n", elapsed_time);
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_OPENCOM += elapsed_time;
 
 }
 
@@ -138,6 +140,7 @@ void commit_open_binary(mpz_t* output, const mpz_t* input, const mpz_t* evalpts,
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     printf("Prover time is: %f ms\n", elapsed_time);
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_OPENCOM += elapsed_time;
 
 	st = clock();
 
@@ -168,6 +171,7 @@ void commit_open_binary(mpz_t* output, const mpz_t* input, const mpz_t* evalpts,
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     printf("Verifier time is: %f ms\n", elapsed_time);
     TIME_VERIFIER += elapsed_time;
+    TIME_VERIFIER_OPENCOM += elapsed_time;
 
 }
 

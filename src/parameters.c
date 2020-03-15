@@ -11,8 +11,14 @@ double TIME_PROVER;
 double TIME_VERIFIER;
 double TIME_VERIFIER_IOLAYER;
 double TIME_VERIFIER_GKR;
-double TIME_PROVER_GKR;
+double TIME_VERIFIER_COMKEY;
+double TIME_VERIFIER_OPENCOM;
 double TIME_PROVER_EVAL;
+double TIME_PROVER_MLEGEN;
+double TIME_PROVER_GKR;
+double TIME_PROVER_COMGEN;
+double TIME_PROVER_OPENCOM;
+
 
 
 /* Generator */
@@ -138,10 +144,16 @@ int init_field(mp_bitcnt_t n, int logN_in)
     mpz_clears(gen, odd, NULL);
     TIME_PROVER = 0;
     TIME_VERIFIER = 0;
-    TIME_PROVER_EVAL = 0;
-    TIME_PROVER_GKR = 0;
-    TIME_VERIFIER_GKR = 0;
     TIME_VERIFIER_IOLAYER = 0;
+    TIME_VERIFIER_GKR = 0;
+    TIME_VERIFIER_COMKEY = 0;
+    TIME_VERIFIER_OPENCOM = 0;
+    TIME_PROVER_EVAL = 0;
+    TIME_PROVER_MLEGEN = 0;
+    TIME_PROVER_GKR = 0;
+    TIME_PROVER_COMGEN = 0;
+    TIME_PROVER_OPENCOM = 0;
+
     return 1;
 }
 

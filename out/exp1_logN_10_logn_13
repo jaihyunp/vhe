@@ -1,0 +1,57 @@
+0: ./bin/vc1.exe
+1: 128
+2: 10
+3: 13
+====================================================
+ Parameter Settetting
+----------------------------------------------------
+N(logN): 1024(10)
+PRIME: fc000000002007f000000fffff7ff001
+GSIZE: 1f800000000400fe000001ffffeffe003
+Gen of Z_PRIME: 3
+gen of Z_GSIZE: 209ddcaccc763b561b9c82aa85ca124
+====================================================
+1.1. Memory allocated and Input generated.
+2. Circuit evaluated.
+  Prover +62214.984000
+  0.000000/62214.984000.
+-----------------------------------
+3. Constructed OPR circuit.
+  Both +6100.891000
+  6100.891000/68315.875000.
+-----------------------------------
+4.1. Randomness fixed.
+4.2. Verifier precomputes the correct answer.
+  Verifier +7.857000
+  6108.748000/68315.875000.
+-----------------------------------
+4.3. Proof generated.
+  Prover +19.013000
+  6108.748000/68334.888000.
+-----------------------------------
+....GKR sumcheck verified.
+....GKR one point reduction verified.
+..GKR All Verified
+4.4. Proof verified.
+  Verifier +0.269000
+  6109.017000/68334.888000.
+-----------------------------------
+..Consistent with the original input.
+5. Check consistency with the input.
+  Verifier +0.000000
+  6109.017000/68334.888000.
+-----------------------------------
+Result: 1
+Total time:
+Vf: 6109.017000 ms.
+Pv: 68334.888000 ms.
+
+
+Experiment 1: mult over Z_p[t]
+logN=10
+logn=13
+IO Layer(Vf):6108.748000
+GKR(Vf):0.269000
+GKR(Pv):19.013000
+MLE Gen(Pv):6100.891000
+Eval(Pv):62214.984000
