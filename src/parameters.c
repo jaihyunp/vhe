@@ -9,6 +9,11 @@ mpz_t *ROU;//2N th roots of unity
 gmp_randstate_t STATE;		// State for random
 double TIME_PROVER;
 double TIME_VERIFIER;
+double TIME_VERIFIER_IOLAYER;
+double TIME_VERIFIER_GKR;
+double TIME_PROVER_GKR;
+double TIME_PROVER_EVAL;
+
 
 /* Generator */
 
@@ -133,6 +138,10 @@ int init_field(mp_bitcnt_t n, int logN_in)
     mpz_clears(gen, odd, NULL);
     TIME_PROVER = 0;
     TIME_VERIFIER = 0;
+    TIME_PROVER_EVAL = 0;
+    TIME_PROVER_GKR = 0;
+    TIME_VERIFIER_GKR = 0;
+    TIME_VERIFIER_IOLAYER = 0;
     return 1;
 }
 

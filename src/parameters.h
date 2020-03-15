@@ -24,6 +24,10 @@ extern mpz_t *ROU;
 
 extern double TIME_PROVER;
 extern double TIME_VERIFIER;
+extern double TIME_VERIFIER_IOLAYER;
+extern double TIME_VERIFIER_GKR;
+extern double TIME_PROVER_GKR;
+extern double TIME_PROVER_EVAL;
 
 int init_field(mp_bitcnt_t n, int logN_in);
 void free_field();

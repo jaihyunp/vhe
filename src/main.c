@@ -16,9 +16,9 @@ int main(int argc, char **argv)
 {
     for (int i = 0; i < argc; i ++)
         printf("%d: %s\n", i, argv[i]);
-//    return main_FX_mult(argc, argv);
+    return main_FX_mult(argc, argv);
 //    return main_FXoverPhi_mult(argc, argv);
-    return main_RXoverPhi_mult(argc, argv);
+//    return main_RXoverPhi_mult(argc, argv);
 }
 
 
@@ -1231,6 +1231,7 @@ int main_FX_mult(int argc, char **argv)
     }
     elapsed_time = (double) ((double) clock() - st) / (CLOCKS_PER_SEC) * 1000;
     TIME_PROVER += elapsed_time;
+    TIME_PROVER_EVAL += elapsed_time;
     printf("2. Circuit evaluated.\n  Prover +%f\n  %f/%f.\n-----------------------------------\n", elapsed_time, TIME_VERIFIER, TIME_PROVER);
 
     // Vf takes a random point val from our finite field, and Pv construct a reduced MLE circuit with val. (3-1)
